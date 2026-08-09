@@ -1,0 +1,11 @@
+{{- $configData := include "liftosaur2garmin.configData" . }}
+{{- if $configData }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "liftosaur2garmin.fullname" . }}
+  labels:
+    {{- include "liftosaur2garmin.labels" . | nindent 4 }}
+data:
+  {{- $configData | nindent 2 }}
+{{- end }}

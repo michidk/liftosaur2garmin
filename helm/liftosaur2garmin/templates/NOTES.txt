@@ -1,0 +1,22 @@
+liftosaur2garmin has been installed.
+
+{{- if .Values.ingress.enabled }}
+
+Dashboard URL{{ if gt (len .Values.ingress.hosts) 1 }}s{{ end }}:
+{{- range .Values.ingress.hosts }}
+  https://{{ .host }}
+{{- end }}
+{{- else }}
+
+Access the dashboard with:
+  kubectl port-forward --namespace {{ .Release.Namespace }} service/{{ include "liftosaur2garmin.fullname" . }} 8123:{{ .Values.service.port }}
+
+Then open http://127.0.0.1:8123/.
+{{- end }}
+
+Configure LIFTOSAUR_API_KEY and GARMIN_EMAIL in the referenced Secret.
+DATABASE_URL is strongly recommended so configuration and Garmin tokens persist
+in PostgreSQL without a PVC. L2G_PASSWORD and GARMIN_PASSWORD are optional.
+
+Keep replicaCount at 1. This application uses an in-process sync lock and an
+in-memory autosync timer and is not safe to scale horizontally.
