@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from liftosaur2garmin.sync import fetch_workouts, sync
 
@@ -111,7 +109,7 @@ class TestSync:
     def test_records_to_db_after_success(self, sample_workout: dict) -> None:
         with patch("liftosaur2garmin.sync.LiftosaurClient") as MockClient, \
              patch("liftosaur2garmin.sync.db") as mock_db, \
-             patch("liftosaur2garmin.sync.get_client") as mock_garmin_client, \
+             patch("liftosaur2garmin.sync.get_client"), \
              patch("liftosaur2garmin.sync.upload_fit") as mock_upload, \
              patch("liftosaur2garmin.sync.rename_activity"), \
              patch("liftosaur2garmin.sync.set_description"):

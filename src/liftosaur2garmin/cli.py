@@ -90,8 +90,8 @@ def cmd_init(args: argparse.Namespace) -> None:
     config["user_profile"] = profile
 
     save_config(config)
-    print(f"\n✓ Setup complete. Config saved to ~/.liftosaur2garmin/config.json")
-    print(f"  Run: liftosaur2garmin sync")
+    print("\n✓ Setup complete. Config saved to ~/.liftosaur2garmin/config.json")
+    print("  Run: liftosaur2garmin sync")
 
 
 def cmd_export_garmin_token(args: argparse.Namespace) -> None:
@@ -203,7 +203,7 @@ def cmd_unmapped(args: argparse.Namespace) -> None:
         print(f"Found {len(unmapped)} unmapped exercises:\n")
         for name, count in sorted(unmapped.items(), key=lambda x: -x[1]):
             print(f"  {name} (used {count}x)")
-        print(f"\nAdd mappings: liftosaur2garmin map \"Exercise Name\" --category N --subcategory N")
+        print("\nAdd mappings: liftosaur2garmin map \"Exercise Name\" --category N --subcategory N")
         print("FIT SDK categories: https://developer.garmin.com/fit/overview/")
 
 
@@ -245,7 +245,7 @@ def cmd_map(args: argparse.Namespace) -> None:
     """Add a custom exercise mapping."""
     save_custom_mapping(args.exercise_name, args.category, args.subcategory)
     print(f"✓ Mapped \"{args.exercise_name}\" → category {args.category}, subcategory {args.subcategory}")
-    print(f"  Saved to ~/.liftosaur2garmin/custom_mappings.json")
+    print("  Saved to ~/.liftosaur2garmin/custom_mappings.json")
 
 
 def main() -> None:

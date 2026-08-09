@@ -56,7 +56,8 @@ class TestSyncTracking:
     def test_recent_ordering(self, tmp_path: Path) -> None:
         db = SQLiteDatabase(tmp_path / "test.db")
         db.mark_synced("w1", title="First")
-        import time; time.sleep(1.1)  # ensure different timestamp
+        import time
+        time.sleep(1.1)  # ensure different timestamp
         db.mark_synced("w2", title="Second")
         recent = db.get_recent_synced(limit=2)
         assert len(recent) == 2
