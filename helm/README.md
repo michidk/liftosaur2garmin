@@ -64,6 +64,11 @@ Two independent strategies - pick one:
    survives pod restarts (`persistence.mountPath` defaults to `/home/app`,
    matching the non-root user baked into this chart's Dockerfile).
 
+The app container runs with a read-only root filesystem. Its home directory is
+always mounted writable: from the configured PVC when persistence is enabled,
+or from an ephemeral `emptyDir` otherwise. `/tmp` is also backed by an
+`emptyDir` for transient FIT generation and library runtime files.
+
 ## Configuration
 
 `config.GARMIN_AUTH_WORKER_BASE_URL` and `config.LIFTOSAUR_API_BASE_URL` are
@@ -74,5 +79,6 @@ the Pod.
 Keep `replicaCount: 1`. Sync coordination and autosync scheduling are
 in-process, so horizontal scaling can cause duplicate work.
 
-The liveness and readiness probes call `GET /`. Kubernetes accepts any 2xx or
-3xx response, including the `/login` redirect used when `L2G_PASSWORD` is set.
+The liveness probe calls dependency-free `GET /healthz`. The readiness probe
+calls `GET /readyz`, which verifies that the configured SQLite or PostgreSQL
+storage is usable. Both bypass dashboard authentication and first-run setup.

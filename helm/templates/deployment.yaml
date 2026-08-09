@@ -106,17 +106,21 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if .Values.persistence.enabled }}
           volumeMounts:
-            - name: data
+            - name: home
               mountPath: {{ .Values.persistence.mountPath }}
-          {{- end }}
-      {{- if .Values.persistence.enabled }}
+            - name: tmp
+              mountPath: /tmp
       volumes:
-        - name: data
+        - name: home
+          {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "liftosaur2garmin.pvcName" . }}
-      {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: tmp
+          emptyDir: {}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

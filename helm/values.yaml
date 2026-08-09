@@ -33,7 +33,7 @@ securityContext:
   capabilities:
     drop:
       - ALL
-  readOnlyRootFilesystem: false
+  readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1000
   runAsGroup: 1000
@@ -66,12 +66,11 @@ ingress:
   #     hosts:
   #       - liftosaur2garmin.example.com
 
-# Kubernetes treats HTTP status codes from 200 through 399 as successful probes,
-# so GET / remains healthy when password auth redirects the request to /login.
+# The dedicated endpoint does not require setup, authentication, or database access.
 probes:
   liveness:
     enabled: true
-    path: /
+    path: /healthz
     port: http
     initialDelaySeconds: 15
     periodSeconds: 20
@@ -79,7 +78,7 @@ probes:
     failureThreshold: 3
   readiness:
     enabled: true
-    path: /
+    path: /readyz
     port: http
     initialDelaySeconds: 5
     periodSeconds: 10
@@ -122,7 +121,8 @@ config:
 # 1. Postgres (recommended): set postgresql.enabled=true (bundled) or
 #    postgresql.existingSecret (bring your own external Postgres). Config,
 #    credentials, and Garmin OAuth tokens all persist in the database, so the
-#    pod is fully stateless and `persistence` below can stay disabled.
+#    pod is fully stateless and `persistence` below can stay disabled. A writable
+#    emptyDir is still mounted at HOME for transient runtime files.
 # 2. Local filesystem (fallback, no Postgres at all): set persistence.enabled
 #    to mount a PVC for the local SQLite DB and the Garmin token file.
 #
@@ -159,8 +159,8 @@ postgresql:
   existingSecret: ""
   existingSecretKey: "url"
 
-# PVC for local SQLite + the Garmin token file. Only relevant when neither
-# postgresql.enabled nor postgresql.existingSecret is set.
+# PVC for local SQLite + the Garmin token file. When disabled, HOME uses an
+# ephemeral emptyDir so the container can keep its root filesystem read-only.
 persistence:
   enabled: false
   existingClaim: ""
