@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from liftosaur2garmin.mapper import (
     EXERCISE_TO_GARMIN,
     _UNKNOWN_CATEGORY,
@@ -45,6 +47,21 @@ class TestLookupBuiltIn:
     def test_preserves_original_name(self) -> None:
         _, _, name = lookup_exercise("Deadlift (Barbell)")
         assert name == "Deadlift (Barbell)"
+
+    @pytest.mark.parametrize(
+        ("liftosaur_name", "expected"),
+        [
+            ("Elliptical Machine", (39, 0)),
+            ("Deadlift, Cable", (8, 0)),
+            ("Lat Pulldown", (21, 13)),
+            ("Seated Row", (23, 18)),
+            ("Lateral Raise", (14, 34)),
+            ("Bicep Curl", (7, 46)),
+            ("Triceps Extension", (30, 39)),
+        ],
+    )
+    def test_maps_live_liftosaur_names(self, liftosaur_name: str, expected: tuple[int, int]) -> None:
+        assert lookup_exercise(liftosaur_name)[:2] == expected
 
 
 class TestCustomMappings:

@@ -120,6 +120,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     "Seated Cable Row - Bar Grip":              (23, 18),  # row / seated_cable_row
     "Seated Cable Row - Bar Wide Grip":         (23, 33),  # row / wide_grip_seated_cable_row
     "Seated Cable Row - V Grip (Cable)":        (23, 32),  # row / v_grip_cable_row
+    "Seated Row":                               (23, 18),  # row / seated_cable_row
     "Seated Row (Machine)":                     (23, 18),  # row / seated_cable_row (closest)
     "Single Arm Cable Row":                     (23, 20),  # row / single_arm_cable_row
     "Squat Row":                                (23, 18),  # row / seated_cable_row (closest)
@@ -133,6 +134,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     "Chin Up (Weighted)":                       (21, 4),   # pull_up / weighted_close_grip_chin_up
     "Kipping Pull Up":                          (21, 32),  # pull_up / kipping_pull_up
     "Kneeling Pulldown (band)":                 (21, 11),  # pull_up / kneeling_lat_pulldown
+    "Lat Pulldown":                             (21, 13),  # pull_up / lat_pulldown
     "Lat Pulldown (Band)":                      (21, 13),  # pull_up / lat_pulldown (closest)
     "Lat Pulldown (Cable)":                     (21, 13),  # pull_up / lat_pulldown
     "Lat Pulldown (Machine)":                   (21, 13),  # pull_up / lat_pulldown (closest)
@@ -187,6 +189,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     "Front Raise (Cable)":                      (14, 5),   # lateral_raise / cable_front_raise
     "Front Raise (Dumbbell)":                   (14, 10),  # lateral_raise / front_raise
     "Front Raise (Suspension)":                 (14, 10),  # lateral_raise / front_raise (suspension)
+    "Lateral Raise":                            (14, 34),  # lateral_raise / dumbbell_lateral_raise
     "Lateral Raise (Band)":                     (14, 11),  # lateral_raise / leaning_dumbbell_lateral_raise (closest band)
     "Lateral Raise (Cable)":                    (14, 14),  # lateral_raise / one_arm_cable_lateral_raise
     "Lateral Raise (Dumbbell)":                 (14, 11),  # lateral_raise / leaning_dumbbell_lateral_raise
@@ -232,6 +235,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     #  BICEPS – Curls (category 7)
     # ======================================================================= #
     "21s Bicep Curl":                           (7, 3),    # curl / barbell_biceps_curl (21s variant)
+    "Bicep Curl":                               (7, 46),   # curl / dumbbell_biceps_curl
     "Behind the Back Bicep Wrist Curl (Barbell)": (7, 4),  # curl / barbell_reverse_wrist_curl
     "Behind the Back Curl (Cable)":             (7, 7),    # curl / behind_the_back_one_arm_cable_curl
     "Bicep Curl (Barbell)":                     (7, 3),    # curl / barbell_biceps_curl
@@ -284,6 +288,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     "Triceps Dip":                              (30, 2),   # triceps_extension / body_weight_dip
     "Triceps Dip (Assisted)":                   (30, 2),   # triceps_extension / body_weight_dip (assisted)
     "Triceps Dip (Weighted)":                   (30, 40),  # triceps_extension / weighted_dip
+    "Triceps Extension":                        (30, 39),  # triceps_extension / triceps_pressdown
     "Triceps Extension (Barbell)":              (30, 8),   # triceps_extension / ez_bar_overhead_triceps_extension
     "Triceps Extension (Cable)":                (30, 5),   # triceps_extension / cable_overhead_triceps_extension
     "Triceps Extension (Dumbbell)":             (30, 15),  # triceps_extension / overhead_dumbbell_triceps_extension
@@ -366,6 +371,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     # ======================================================================= #
     "Deadlift (Band)":                          (8, 0),    # deadlift / barbell_deadlift (closest band)
     "Deadlift (Barbell)":                       (8, 0),    # deadlift / barbell_deadlift
+    "Deadlift (Cable)":                         (8, 0),    # deadlift / barbell_deadlift (closest cable variant)
     "Deadlift (Dumbbell)":                      (8, 2),    # deadlift / dumbbell_deadlift
     "Deadlift (Smith Machine)":                 (8, 0),    # deadlift / barbell_deadlift (smith)
     "Deadlift (Trap bar)":                      (8, 17),   # deadlift / trap_bar_deadlift
@@ -593,6 +599,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     "Boxing":                                   (2, 42),   # cardio / punch
     "Climbing":                                 (2, 0),    # cardio / generic
     "Cycling":                                  (33, 0),   # bike / bike
+    "Elliptical Machine":                       (39, 0),   # elliptical / elliptical
     "Elliptical Trainer":                       (39, 0),   # elliptical / elliptical
     "HIIT":                                     (2, 0),    # cardio / generic
     "Hiking":                                   (32, 1),   # run / walk (hiking = walking)
