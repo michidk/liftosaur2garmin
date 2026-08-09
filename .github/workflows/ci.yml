@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+      - "requirements.txt"
+      - "src/**"
+      - "Dockerfile"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "uv.lock"
+      - "requirements.txt"
+      - "src/**"
+      - "Dockerfile"
+      - ".github/workflows/ci.yml"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test:
+    name: Test Suite
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync --locked --all-extras
+      - name: Test
+        run: UV_CACHE_DIR=.uv-cache uv run pytest -q
+
+  lints:
+    name: Lints
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Run ruff
+        run: uvx ruff check .
+
+  audit:
+    name: Security Audit
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Export resolved dependencies
+        run: uv export --locked --all-extras --no-emit-project --format requirements-txt --output-file "${{ runner.temp }}/requirements-audit.txt"
+      - name: Run pip-audit
+        run: uvx pip-audit --requirement "${{ runner.temp }}/requirements-audit.txt"
+
+  hadolint:
+    name: Hadolint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: Dockerfile
