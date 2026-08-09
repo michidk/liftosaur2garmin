@@ -1,0 +1,6 @@
+apiVersion: v2
+name: liftosaur2garmin
+description: Deploy liftosaur2garmin's FastAPI dashboard and sync service, with optional bundled PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "0.1.2"

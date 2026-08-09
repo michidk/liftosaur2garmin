@@ -1,0 +1,179 @@
+# liftosaur2garmin uses an in-process sync lock and an in-memory autosync timer.
+# Running more than one replica can duplicate sync work and is not supported.
+replicaCount: 1
+
+image:
+  repository: ghcr.io/michidk/liftosaur2garmin
+  # Empty by default -> falls back to Chart.AppVersion (see templates/deployment.yaml).
+  # Pin an explicit tag or digest for reproducible deployments.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+# uid/gid 1000 matches the "app" user created in the Dockerfile
+# (groupadd/useradd --uid/--gid 1000, home dir /home/app).
+podSecurityContext:
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+service:
+  type: ClusterIP
+  port: 8123
+
+ingress:
+  enabled: false
+  # Empty by default so the cluster's own default IngressClass applies.
+  # Set explicitly (e.g. "nginx", "traefik") if your cluster has no default
+  # class or you want a specific one.
+  className: ""
+  annotations: {}
+  # Example:
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-production
+  hosts: []
+  # Example:
+  # hosts:
+  #   - host: liftosaur2garmin.example.com
+  #     paths:
+  #       - path: /
+  #         pathType: Prefix
+  tls: []
+  # Example:
+  # tls:
+  #   - secretName: liftosaur2garmin-tls
+  #     hosts:
+  #       - liftosaur2garmin.example.com
+
+# Kubernetes treats HTTP status codes from 200 through 399 as successful probes,
+# so GET / remains healthy when password auth redirects the request to /login.
+probes:
+  liveness:
+    enabled: true
+    path: /
+    port: http
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    path: /
+    port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Keep empty by default so operators can choose resource settings appropriate to
+# their cluster. Example:
+# resources:
+#   requests:
+#     cpu: 50m
+#     memory: 128Mi
+#   limits:
+#     cpu: 500m
+#     memory: 512Mi
+resources: {}
+
+# App secrets unrelated to the database (see the `postgresql` block below for
+# DATABASE_URL). Set create=true to let Helm create a Secret from data below,
+# or leave create false and set existingSecret to a Secret managed out-of-band
+# (kubectl, Sealed Secrets, your secrets operator of choice, etc). Never commit
+# real credentials to a values file.
+secret:
+  create: false
+  existingSecret: ""
+  data: {}
+  # Supported keys:
+  # LIFTOSAUR_API_KEY: ""
+  # GARMIN_EMAIL: ""
+  # GARMIN_PASSWORD: ""  # Optional; token-based login is preferred.
+  # L2G_PASSWORD: ""     # Optional; enables dashboard password authentication.
+
+# Empty values are omitted from the generated ConfigMap.
+config:
+  GARMIN_AUTH_WORKER_BASE_URL: ""
+  LIFTOSAUR_API_BASE_URL: ""
+
+# --- Storage: two independent strategies, pick one ---
+#
+# 1. Postgres (recommended): set postgresql.enabled=true (bundled) or
+#    postgresql.existingSecret (bring your own external Postgres). Config,
+#    credentials, and Garmin OAuth tokens all persist in the database, so the
+#    pod is fully stateless and `persistence` below can stay disabled.
+# 2. Local filesystem (fallback, no Postgres at all): set persistence.enabled
+#    to mount a PVC for the local SQLite DB and the Garmin token file.
+#
+# Both can technically be enabled at once, but there's no reason to.
+
+# Optional bundled PostgreSQL. Disabled by default - the app works fine
+# without any database configured, falling back to local SQLite.
+postgresql:
+  enabled: false
+  image:
+    repository: postgres
+    tag: "17-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    port: 5432
+  auth:
+    database: "liftosaur2garmin"
+    username: "liftosaur2garmin"
+    # Required (no default) when postgresql.enabled=true - set via
+    # --set postgresql.auth.password=... or a values file you don't commit.
+    password: ""
+  primary:
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    persistence:
+      enabled: true
+      size: "1Gi"
+      storageClass: ""
+  # Alternative to the bundled StatefulSet above: reference an existing
+  # Secret containing a full postgresql:// connection string, e.g. for a
+  # managed/external Postgres instance. Takes precedence over `enabled`.
+  existingSecret: ""
+  existingSecretKey: "url"
+
+# PVC for local SQLite + the Garmin token file. Only relevant when neither
+# postgresql.enabled nor postgresql.existingSecret is set.
+persistence:
+  enabled: false
+  existingClaim: ""
+  storageClass: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+  annotations: {}
+  # Must match the non-root user's home directory baked into the Dockerfile.
+  # This image's Dockerfile creates uid/gid 1000 with home /home/app; if you
+  # build your own image with a different user, override this accordingly.
+  mountPath: /home/app
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

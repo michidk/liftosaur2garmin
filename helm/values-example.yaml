@@ -1,0 +1,32 @@
+image:
+  tag: "0.1.2"
+
+secret:
+  create: false
+  existingSecret: liftosaur2garmin-env
+
+# Recommended: bundled Postgres, so the pod stays fully stateless.
+# Set the password via `--set postgresql.auth.password=...` instead of
+# committing it here, or reference an existing secret with
+# `postgresql.existingSecret` + `postgresql.existingSecretKey` instead.
+postgresql:
+  enabled: true
+  auth:
+    password: ""
+
+ingress:
+  enabled: true
+  # Uncomment if your cluster has no default IngressClass or you want a
+  # specific one:
+  # className: nginx
+  annotations: {}
+  hosts:
+    - host: liftosaur2garmin.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+config:
+  GARMIN_AUTH_WORKER_BASE_URL: ""
+  LIFTOSAUR_API_BASE_URL: ""

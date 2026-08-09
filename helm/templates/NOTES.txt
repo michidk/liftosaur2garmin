@@ -15,8 +15,11 @@ Then open http://127.0.0.1:8123/.
 {{- end }}
 
 Configure LIFTOSAUR_API_KEY and GARMIN_EMAIL in the referenced Secret.
-DATABASE_URL is strongly recommended so configuration and Garmin tokens persist
-in PostgreSQL without a PVC. L2G_PASSWORD and GARMIN_PASSWORD are optional.
+L2G_PASSWORD and GARMIN_PASSWORD are optional.
+
+Postgres (postgresql.enabled or postgresql.existingSecret) is recommended so
+configuration and Garmin tokens persist in the database without a PVC;
+otherwise enable persistence.enabled for a local-filesystem fallback.
 
 Keep replicaCount at 1. This application uses an in-process sync lock and an
 in-memory autosync timer and is not safe to scale horizontally.

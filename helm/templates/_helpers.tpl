@@ -53,6 +53,14 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- default (include "liftosaur2garmin.fullname" .) .Values.persistence.existingClaim }}
 {{- end }}
 
+{{- define "liftosaur2garmin.postgresqlName" -}}
+{{- printf "%s-postgresql" (include "liftosaur2garmin.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{- define "liftosaur2garmin.postgresqlSecretName" -}}
+{{- include "liftosaur2garmin.postgresqlName" . -}}
+{{- end }}
+
 {{- define "liftosaur2garmin.configData" -}}
 {{- $data := dict -}}
 {{- range $key, $value := .Values.config -}}
