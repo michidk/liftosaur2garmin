@@ -12,7 +12,6 @@ from liftosaur2garmin.mapper import (
     EXERCISE_TO_GARMIN,
     _UNKNOWN_CATEGORY,
     lookup_exercise,
-    save_custom_mapping,
     _custom_mappings,
     _ensure_custom_loaded,
 )

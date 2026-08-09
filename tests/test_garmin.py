@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from liftosaur2garmin.garmin import find_activity_by_start_time, generate_description
 

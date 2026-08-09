@@ -7,7 +7,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from liftosaur2garmin.config import (
-    DEFAULT_CONFIG,
     is_configured,
     load_config,
     save_config,

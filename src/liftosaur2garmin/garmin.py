@@ -6,8 +6,6 @@ import base64
 import io
 import json
 import logging
-import os
-import secrets
 import time
 from pathlib import Path
 from typing import Any
