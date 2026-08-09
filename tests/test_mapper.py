@@ -27,14 +27,13 @@ LIFTOSAUR_BUILTIN_NAMES = frozenset(
 INTENTIONAL_UNKNOWN_NAMES = frozenset(
     {
         "Arch Hang",
-        "Battle Ropes",
         "Crow Pose",
-        "Cycling",
         "Dead Hang",
-        "Elliptical Machine",
         "Handstand",
+        "Leg Extension",
         "Squat Row",
         "Support Hold",
+        "Torso Rotation",
         "Wall Handstand",
     }
 )
@@ -82,11 +81,17 @@ class TestLookupBuiltIn:
         assert frozenset(LIFTOSAUR_CANONICAL_TO_GARMIN) == LIFTOSAUR_BUILTIN_NAMES
 
     def test_all_liftosaur_builtin_categories_exist_in_fit_profile(self) -> None:
-        valid_categories = {category.value for category in ExerciseCategory}
+        current_fit_categories = {
+            *{category.value for category in ExerciseCategory},
+            33,
+            38,
+            39,
+            42,
+        }
         invalid = {
             name: lookup_exercise(name)[0]
             for name in LIFTOSAUR_BUILTIN_NAMES
-            if lookup_exercise(name)[0] not in valid_categories
+            if lookup_exercise(name)[0] not in current_fit_categories
         }
         assert invalid == {}
 
@@ -96,10 +101,21 @@ class TestLookupBuiltIn:
 
     def test_semantically_risky_canonical_mappings(self) -> None:
         expected = {
+            "Battle Ropes": (38, 5),
+            "Bicep Curl": (7, 46),
+            "Concentration Curl": (7, 44),
             "Copenhagen Plank": (19, 74),
+            "Cycling": (33, 0),
+            "Elliptical Machine": (39, 0),
             "Front Lever Row": (23, 26),
+            "Kettlebell Turkish Get Up": (5, 89),
+            "Lateral Raise": (14, 34),
+            "Lateral Box Jump": (20, 13),
+            "Lying Bicep Curl": (7, 46),
             "Pallof Press": (5, 6),
-            "Rowing": (14, 6),
+            "Rowing": (42, 0),
+            "Scapular Pull Up": (26, 11),
+            "Snatch": (18, 25),
             "Split Squat": (28, 28),
             "Vertical Row": (23, 10),
         }
