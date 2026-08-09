@@ -9,7 +9,11 @@ on:
       - "src/**"
       - "tests/**"
       - "Dockerfile"
+      - ".dockerignore"
+      - "helm/**"
+      - "README.md"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/release.yml"
   pull_request:
     paths:
       - "pyproject.toml"
@@ -18,7 +22,11 @@ on:
       - "src/**"
       - "tests/**"
       - "Dockerfile"
+      - ".dockerignore"
+      - "helm/**"
+      - "README.md"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/release.yml"
 
 defaults:
   run:
@@ -76,3 +84,54 @@ jobs:
         uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: Dockerfile
+
+  container:
+    name: Container smoke test
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Build image
+        run: docker build --tag liftosaur2garmin:ci .
+      - name: Run read-only health check
+        run: |
+          container_id="$(docker run --detach \
+            --read-only \
+            --tmpfs /home/app:uid=1000,gid=1000,mode=0750 \
+            --tmpfs /tmp:uid=1000,gid=1000,mode=1777 \
+            --health-interval=1s \
+            --health-start-period=1s \
+            --health-timeout=3s \
+            liftosaur2garmin:ci)"
+          trap 'docker logs "$container_id"; docker rm --force "$container_id" >/dev/null' EXIT
+          for attempt in {1..30}; do
+            health="$(docker inspect --format '{{.State.Health.Status}}' "$container_id")"
+            case "$health" in
+              healthy) break ;;
+              unhealthy) exit 1 ;;
+            esac
+            sleep 1
+          done
+          if [ "$health" != healthy ]; then
+            echo "Container did not become healthy after $attempt attempts"
+            exit 1
+          fi
+          docker exec "$container_id" python -c \
+            "import urllib.request; urllib.request.urlopen('http://localhost:8123/readyz', timeout=3).close()"
+
+  helm:
+    name: Helm chart
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v7
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+      - name: Lint chart
+        run: helm lint ./helm
+      - name: Render ephemeral storage
+        run: helm template ephemeral ./helm >/dev/null
+      - name: Render persistent storage
+        run: helm template persistent ./helm --set persistence.enabled=true >/dev/null
+      - name: Render bundled PostgreSQL
+        run: helm template postgres ./helm --set postgresql.enabled=true --set postgresql.auth.password=test-password >/dev/null
