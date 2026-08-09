@@ -6,6 +6,9 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+from fit_tool.profile.profile_type import ExerciseCategory
+
+from liftosaur2garmin.liftosaur_mappings import LIFTOSAUR_CANONICAL_TO_GARMIN
 from liftosaur2garmin.mapper import (
     EXERCISE_TO_GARMIN,
     _UNKNOWN_CATEGORY,
@@ -13,6 +16,27 @@ from liftosaur2garmin.mapper import (
     save_custom_mapping,
     _custom_mappings,
     _ensure_custom_loaded,
+)
+
+
+LIFTOSAUR_BUILTIN_NAMES = frozenset(
+    line
+    for line in (Path(__file__).parent / "fixtures" / "liftosaur_builtin_exercises.txt").read_text().splitlines()
+    if line and not line.startswith("#")
+)
+INTENTIONAL_UNKNOWN_NAMES = frozenset(
+    {
+        "Arch Hang",
+        "Battle Ropes",
+        "Crow Pose",
+        "Cycling",
+        "Dead Hang",
+        "Elliptical Machine",
+        "Handstand",
+        "Squat Row",
+        "Support Hold",
+        "Wall Handstand",
+    }
 )
 
 
@@ -45,6 +69,51 @@ class TestLookupBuiltIn:
     def test_preserves_original_name(self) -> None:
         _, _, name = lookup_exercise("Deadlift (Barbell)")
         assert name == "Deadlift (Barbell)"
+
+    def test_all_liftosaur_builtins_have_reviewed_mappings(self) -> None:
+        unknown = {
+            name
+            for name in LIFTOSAUR_BUILTIN_NAMES
+            if lookup_exercise(name)[0] == _UNKNOWN_CATEGORY
+        }
+        assert unknown == INTENTIONAL_UNKNOWN_NAMES
+
+    def test_canonical_mapping_matches_pinned_liftosaur_catalog(self) -> None:
+        assert frozenset(LIFTOSAUR_CANONICAL_TO_GARMIN) == LIFTOSAUR_BUILTIN_NAMES
+
+    def test_all_liftosaur_builtin_categories_exist_in_fit_profile(self) -> None:
+        valid_categories = {category.value for category in ExerciseCategory}
+        invalid = {
+            name: lookup_exercise(name)[0]
+            for name in LIFTOSAUR_BUILTIN_NAMES
+            if lookup_exercise(name)[0] not in valid_categories
+        }
+        assert invalid == {}
+
+    def test_overhead_lunge_and_carry_have_distinct_mappings(self) -> None:
+        assert lookup_exercise("Overhead Dumbbell Lunge")[:2] == (17, 40)
+        assert lookup_exercise("Overhead Carry")[:2] == (3, 4)
+
+    def test_semantically_risky_canonical_mappings(self) -> None:
+        expected = {
+            "Copenhagen Plank": (19, 74),
+            "Front Lever Row": (23, 26),
+            "Pallof Press": (5, 6),
+            "Rowing": (14, 6),
+            "Split Squat": (28, 28),
+            "Vertical Row": (23, 10),
+        }
+        assert {name: lookup_exercise(name)[:2] for name in expected} == expected
+
+    def test_equipment_qualified_names_fall_back_to_canonical_mapping(self) -> None:
+        expected = {
+            "Bicep Curl, Dumbbell": (7, 37),
+            "Deadlift, Cable": (8, 0),
+            "Lat Pulldown, Cable": (21, 13),
+            "Seated Row, Leverage Machine": (23, 18),
+            "Triceps Extension, Dumbbell": (30, 15),
+        }
+        assert {name: lookup_exercise(name)[:2] for name in expected} == expected
 
 
 class TestCustomMappings:

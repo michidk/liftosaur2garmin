@@ -18,6 +18,8 @@ FIT SDK exercise categories used:
 
 from __future__ import annotations
 
+from liftosaur2garmin.liftosaur_mappings import LIFTOSAUR_CANONICAL_TO_GARMIN
+
 # --------------------------------------------------------------------------- #
 # Mapping: exercise name  ->  (FIT exercise category, subcategory)
 # --------------------------------------------------------------------------- #
@@ -551,7 +553,7 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     #  CARRY (category 3)
     # ======================================================================= #
     "Farmers Walk":                             (3, 1),    # carry / farmers_walk
-    "Overhead Dumbbell Lunge":                  (3, 4),    # carry / overhead_carry (closest overhead lunge/carry)
+    "Overhead Carry":                           (3, 4),    # carry / overhead_carry
 
     # ======================================================================= #
     #  WARM UP (category 31)
@@ -619,6 +621,8 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
     "Walking":                                  (32, 1),   # run / walk
 
 }
+
+EXERCISE_TO_GARMIN.update(LIFTOSAUR_CANONICAL_TO_GARMIN)
 
 # --------------------------------------------------------------------------- #
 # Remove any duplicates that crept in (the last assignment wins in Python
