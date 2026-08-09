@@ -1,0 +1,212 @@
+# Source: astashov/liftosaur@b7e67036889cec73c3859abf17945db1e05a49f0 src/models/exercise.ts allExercisesList
+Ab Wheel
+Arnold Press
+Around The World
+Back Extension
+Ball Slams
+Battle Ropes
+Behind The Neck Press
+Bench Dip
+Bench Press
+Bench Press Close Grip
+Bench Press Wide Grip
+Bent Over One Arm Row
+Bent Over Row
+Bicep Curl
+Bicycle Crunch
+Box Jump
+Box Squat
+Bulgarian Split Squat
+Burpee
+Cable Crossover
+Cable Crunch
+Cable Kickback
+Cable Pull Through
+Cable Twist
+Calf Press on Leg Press
+Calf Press on Seated Leg Press
+Chest Dip
+Chest Fly
+Chest Press
+Chest-Supported Row
+Chin Up
+Clean
+Clean and Jerk
+Concentration Curl
+Cross Body Crunch
+Crunch
+Cycling
+Deadlift
+Deadlift High Pull
+Decline Bench Press
+Decline Crunch
+Deficit Deadlift
+Elliptical Machine
+Face Pull
+Flat Knee Raise
+Flat Leg Raise
+Front Raise
+Front Squat
+Goblet Squat
+Good Morning
+Glute Bridge
+Glute Bridge March
+Glute Kickback
+Hack Squat
+Hammer Curl
+Handstand Push Up
+Hang Clean
+Hang Snatch
+Hanging Leg Raise
+High Knee Skips
+High Row
+Hip Abductor
+Hip Adductor
+Hip Thrust
+Incline Bench Press
+Incline Bench Press Wide Grip
+Incline Chest Fly
+Incline Chest Press
+Incline Curl
+Incline Row
+Inverted Row
+Iso-Lateral Chest Press
+Iso-Lateral Row
+Jackknife Sit Up
+Jump Rope
+Jump Squat
+Jumping Jack
+Kettlebell Swing
+Kettlebell Turkish Get Up
+Kipping Pull Up
+Knee Raise
+Kneeling Pulldown
+Knees to Elbows
+Lat Pulldown
+Lateral Box Jump
+Lateral Raise
+Legs Up Bench Press
+Leg Curl
+Leg Extension
+Leg Press
+Lunge
+Lying Bicep Curl
+Lying Leg Curl
+Mountain Climber
+Muscle Up
+Oblique Crunch
+Overhead Press
+Overhead Squat
+Pec Deck
+Pendlay Row
+Pistol Squat
+Plank
+Power Clean
+Power Snatch
+Preacher Curl
+Press Under
+Pull Up
+Pullover
+Push Press
+Push Up
+Reverse Crunch
+Reverse Curl
+Reverse Fly
+Reverse Grip Concentration Curl
+Reverse Plank
+Reverse Lat Pulldown
+Reverse Lunge
+Reverse Wrist Curl
+Romanian Deadlift
+Reverse Hyperextension
+Rowing
+Russian Twist
+Safety Squat Bar Squat
+Seated Calf Raise
+Seated Front Raise
+Seated Leg Curl
+Seated Leg Press
+Seated Overhead Press
+Seated Palms Up Wrist Curl
+Seated Row
+Seated Wide Grip Row
+Shoulder Press
+Shoulder Press Parallel Grip
+Shrug
+Side Bend
+Side Crunch
+Side Hip Abductor
+Side Lying Clam
+Side Plank
+Single Leg Bridge
+Single Leg Calf Raise
+Single Leg Deadlift
+Single Leg Glute Bridge On Bench
+Single Leg Glute Bridge Straight Leg
+Single Leg Glute Bridge Bent Knee
+Single Leg Hip Thrust
+Sissy Squat
+Sit Up
+Skullcrusher
+Sling Shot Bench Press
+Snatch
+Snatch Pull
+Split Squat
+Split Jerk
+Squat
+Squat Row
+Standing Calf Raise
+Standing Row
+Standing Row Close Grip
+Standing Row Rear Delt With Rope
+Standing Row Rear Delt, Horizontal, With Rope
+Standing Row V-Bar
+Step up
+Stiff Leg Deadlift
+Straight Leg Deadlift
+Sumo Deadlift
+Sumo Deadlift High Pull
+Superman
+T Bar Row
+Thruster
+Toes To Bar
+Torso Rotation
+Trap Bar Deadlift
+Triceps Dip
+Triceps Extension
+Triceps Pushdown
+Upright Row
+V Up
+Wide Pull Up
+Wrist Curl
+Wrist Roller
+Zercher Squat
+Wall Push Up
+Incline Push Up
+Knee Push Up
+Diamond Push Up
+Pseudo Planche Push Up
+Pike Push Up
+Ring Dip
+Negative Dip
+Vertical Row
+Wide Row
+Ring Row
+Tuck Front Lever Row
+Front Lever Row
+Scapular Pull Up
+Dead Hang
+Negative Pull Up
+Assisted Squat
+Shrimp Squat
+Nordic Curl
+Handstand
+Wall Handstand
+Crow Pose
+Dragon Flag
+Copenhagen Plank
+Hanging Knee Raise
+Arch Hang
+Support Hold
+Pallof Press
+Renegade Row
