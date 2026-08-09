@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import secrets
+import sqlite3
 import threading
 import time
 import json
@@ -13,6 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import psycopg2
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -141,6 +143,20 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon_ico() -> FileResponse:
     return FileResponse(FAVICON_ICO_PATH, media_type="image/vnd.microsoft.icon")
+
+
+@app.get("/healthz", include_in_schema=False)
+async def healthz() -> JSONResponse:
+    return JSONResponse({"status": "ok"})
+
+
+@app.get("/readyz", include_in_schema=False)
+def readyz() -> JSONResponse:
+    try:
+        db.get_synced_count()
+    except (OSError, sqlite3.Error, psycopg2.Error):
+        return JSONResponse({"status": "not_ready"}, status_code=503)
+    return JSONResponse({"status": "ready"})
 
 
 # ── Auto-sync state ─────────────────────────────────────────────────────────
@@ -381,6 +397,8 @@ async def _startup_autosync() -> None:
 _is_configured_cache: bool | None = None
 
 _SETUP_EXEMPT_PATHS = {
+    "/healthz",
+    "/readyz",
     "/login",
     "/setup",
     "/api/sync-one",
@@ -394,6 +412,8 @@ _SETUP_EXEMPT_PATHS = {
 }
 
 _AUTH_EXEMPT_PATHS = {
+    "/healthz",
+    "/readyz",
     "/login",
     "/setup",
     "/favicon.ico",

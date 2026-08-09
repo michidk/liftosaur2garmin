@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import MagicMock
 from typing import Any
 
@@ -131,6 +133,69 @@ class TestFavicon:
         assert response.status_code == 200
         assert '<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">' in response.text
         assert '<link rel="alternate icon" href="/favicon.ico" sizes="any">' in response.text
+
+
+class TestHealthz:
+    def test_healthz_bypasses_auth_and_setup(self, monkeypatch) -> None:
+        client = TestClient(app)
+        monkeypatch.setattr("liftosaur2garmin.server.auth_enabled", lambda: True)
+        monkeypatch.setattr("liftosaur2garmin.server.verify_session", lambda session: False)
+        monkeypatch.setattr("liftosaur2garmin.server.is_configured", lambda: False)
+        monkeypatch.setattr("liftosaur2garmin.server.db.get_synced_count", MagicMock(side_effect=OSError))
+
+        response = client.get("/healthz")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ok"}
+
+
+class TestReadyz:
+    def test_readyz_checks_storage(self, monkeypatch) -> None:
+        client = TestClient(app)
+        get_synced_count = MagicMock(return_value=0)
+        monkeypatch.setattr("liftosaur2garmin.server.auth_enabled", lambda: True)
+        monkeypatch.setattr("liftosaur2garmin.server.verify_session", lambda session: False)
+        monkeypatch.setattr("liftosaur2garmin.server.is_configured", lambda: False)
+        monkeypatch.setattr("liftosaur2garmin.server.db.get_synced_count", get_synced_count)
+
+        response = client.get("/readyz")
+
+        assert response.status_code == 200
+        assert response.json() == {"status": "ready"}
+        get_synced_count.assert_called_once_with()
+
+    def test_readyz_returns_503_when_storage_is_unavailable(self, monkeypatch) -> None:
+        client = TestClient(app)
+        monkeypatch.setattr("liftosaur2garmin.server.db.get_synced_count", MagicMock(side_effect=OSError))
+
+        response = client.get("/readyz")
+
+        assert response.status_code == 503
+        assert response.json() == {"status": "not_ready"}
+
+    def test_healthz_responds_while_readyz_storage_check_blocks(self, monkeypatch) -> None:
+        storage_check_started = threading.Event()
+        release_storage_check = threading.Event()
+
+        def blocking_get_synced_count() -> int:
+            storage_check_started.set()
+            assert release_storage_check.wait(timeout=2)
+            return 0
+
+        monkeypatch.setattr("liftosaur2garmin.server.db.get_synced_count", blocking_get_synced_count)
+
+        with TestClient(app) as client, ThreadPoolExecutor(max_workers=2) as executor:
+            ready_future = executor.submit(client.get, "/readyz")
+            assert storage_check_started.wait(timeout=2)
+            health_future = executor.submit(client.get, "/healthz")
+            try:
+                health_response = health_future.result(timeout=1)
+            finally:
+                release_storage_check.set()
+            ready_response = ready_future.result(timeout=2)
+
+        assert health_response.status_code == 200
+        assert ready_response.status_code == 200
 
 
 class TestLiftosaurSetupApis:
