@@ -39,7 +39,7 @@ jobs:
         id: current
         run: |
           version=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
-          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Bump version in Python metadata
         run: |
           python - "${{ inputs.bump }}" <<'PY'
@@ -79,25 +79,46 @@ jobs:
               if replacements != 1:
                   raise SystemExit(f"Could not update {project_name} {current} in uv.lock")
               lock_path.write_text(lock)
+
+          chart_path = Path("helm/Chart.yaml")
+          chart = chart_path.read_text()
+          chart_replacements = {
+              f'version: {current}': f'version: {new}',
+              f'appVersion: "{current}"': f'appVersion: "{new}"',
+          }
+          for old, replacement in chart_replacements.items():
+              if chart.count(old) != 1:
+                  raise SystemExit(f"Expected one {old} line in helm/Chart.yaml")
+              chart = chart.replace(old, replacement, 1)
+          chart_path.write_text(chart)
+
+          example_path = Path("helm/values-example.yaml")
+          example = example_path.read_text()
+          old_image_tag = f'  tag: "{current}"'
+          if example.count(old_image_tag) != 1:
+              raise SystemExit(f"Expected one image tag {current} in helm/values-example.yaml")
+          example_path.write_text(example.replace(old_image_tag, f'  tag: "{new}"', 1))
           PY
       - name: Get new version
         id: new
         run: |
           version=$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "tag=v$version" >> $GITHUB_OUTPUT
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
       - name: Commit and tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pyproject.toml uv.lock
+          git add pyproject.toml uv.lock helm/Chart.yaml helm/values-example.yaml
           git commit -m "chore(release): ${{ steps.new.outputs.tag }}"
           git tag "${{ steps.new.outputs.tag }}"
           git push origin main --tags
       - name: Summary
         run: |
-          echo "### Version Bumped" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**${{ steps.current.outputs.version }}** → **${{ steps.new.outputs.version }}** (${{ inputs.bump }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Tag \`${{ steps.new.outputs.tag }}\` pushed — release workflow will build and publish." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Version Bumped"
+            echo ""
+            echo "**${{ steps.current.outputs.version }}** → **${{ steps.new.outputs.version }}** (${{ inputs.bump }})"
+            echo ""
+            echo "Tag \`${{ steps.new.outputs.tag }}\` pushed — release workflow will build and publish."
+          } >> "$GITHUB_STEP_SUMMARY"
