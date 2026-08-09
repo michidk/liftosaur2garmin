@@ -130,7 +130,7 @@ def load_config() -> dict[str, Any]:
 
 
 def save_config(config: dict[str, Any]) -> None:
-    """Save config to file. Silently skips on read-only filesystems (Vercel)."""
+    """Save config to file. Silently skips on read-only filesystems."""
     try:
         config.pop(_LEGACY_API_KEY_FIELD, None)
         CONFIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -147,7 +147,7 @@ def get(key: str, default: Any = None) -> Any:
 def is_configured() -> bool:
     """Check if initial setup has been done.
 
-    On Vercel (DATABASE_URL set): requires both API key AND Garmin tokens in DB.
+    On DB-backed deployments (DATABASE_URL set): requires both API key AND Garmin tokens in DB.
     Locally: just checks for API key. Garmin connection happens after setup.
     """
     config = load_config()

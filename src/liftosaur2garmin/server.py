@@ -241,7 +241,7 @@ def _run_autosync() -> None:
             logger.error("Auto-sync: Liftosaur API key invalid — disabling auto-sync. %s", e)
             config["auto_sync"]["enabled"] = False
             save_config(config)
-            # Also persist to DB (Vercel filesystem is read-only)
+            # Also persist to DB for deployments with ephemeral or read-only filesystems.
             if db.get_database_url():
                 try:
                     import json as _json
@@ -385,7 +385,6 @@ _SETUP_EXEMPT_PATHS = {
     "/setup",
     "/api/sync-one",
     "/api/cron/sync",
-    "/api/setup-actions",
     "/api/validate-liftosaur",
     "/api/garmin-ticket",
     "/api/garmin/login/start",
@@ -399,7 +398,6 @@ _AUTH_EXEMPT_PATHS = {
     "/setup",
     "/favicon.ico",
     "/api/cron/sync",
-    "/api/setup-actions",
     "/api/validate-liftosaur",
     "/api/garmin-ticket",
     "/api/garmin/login/start",
@@ -519,7 +517,6 @@ async def dashboard(request: Request):
         sync_log=db.get_sync_log(10),
         mapping_count=mapping_count,
         garmin_connected=garmin_connected,
-        needs_actions_setup=False,
     )
 
 
@@ -997,7 +994,7 @@ async def settings_save(
     save_config(config)
     _persist_cloud_credentials(liftosaur_api_key=liftosaur_api_key, garmin_email=garmin_email)
 
-    # Persist settings to DB on cloud (filesystem is read-only on Vercel)
+    # Persist settings to DB on deployments with ephemeral or read-only filesystems.
     if db.get_database_url():
         try:
             _db = db.get_db()
@@ -1149,30 +1146,6 @@ async def api_pull_garmin_profile(request: Request):
 @app.post("/api/sync", response_class=HTMLResponse)
 async def api_sync(request: Request):
     global _last_sync_time
-
-    # If GitHub PAT + repo are set (Vercel deploy), trigger sync via GitHub Actions
-    github_pat = os.environ.get("GITHUB_PAT")
-    github_repo = os.environ.get("GITHUB_REPO")
-    if github_pat and github_repo:
-        import requests as req
-
-        resp = req.post(
-            f"https://api.github.com/repos/{github_repo}/dispatches",
-            headers={
-                "Authorization": f"Bearer {github_pat}",
-                "Accept": "application/vnd.github+json",
-            },
-            json={"event_type": "sync-trigger"},
-            timeout=10,
-        )
-        if resp.ok:
-            return HTMLResponse(
-                '<div class="toast toast-success">Sync triggered via GitHub Actions.'
-                " Workouts will appear in a few minutes.</div>"
-            )
-        return HTMLResponse(
-            f'<div class="toast toast-error">Failed to trigger sync: HTTP {resp.status_code}</div>'
-        )
 
     form = await request.form()
     scope = form.get("scope", "recent")
@@ -1354,231 +1327,14 @@ async def api_toggle_autosync(request: Request):
             logger.warning("Failed to persist auto-sync state: %s", e)
 
     if enabled:
-        if os.environ.get("VERCEL") and os.environ.get("GITHUB_PAT"):
-            ok, msg = await _setup_github_actions(interval_minutes=interval)
-            if ok:
-                logger.info("GitHub Actions auto-sync configured (interval=%dmin)", interval)
-            else:
-                logger.warning("Failed to set up GitHub Actions: %s", msg)
-        else:
-            _schedule_autosync(interval)
+        _schedule_autosync(interval)
         logger.info("Auto-sync enabled: every %d min", interval)
     else:
         _stop_autosync()
-        # On Vercel: delete the sync workflow to stop the cron
-        if os.environ.get("VERCEL") and os.environ.get("GITHUB_PAT"):
-            try:
-                import requests as req
-                pat = os.environ.get("GITHUB_PAT")
-                owner = os.environ.get("VERCEL_GIT_REPO_OWNER")
-                repo_name = os.environ.get("VERCEL_GIT_REPO_SLUG")
-                gh_headers = {"Authorization": f"Bearer {pat}", "Accept": "application/vnd.github+json"}
-                wf = req.get(f"https://api.github.com/repos/{owner}/{repo_name}/contents/.github/workflows/sync.yml",
-                             headers=gh_headers, timeout=10)
-                if wf.status_code == 200:
-                    req.delete(f"https://api.github.com/repos/{owner}/{repo_name}/contents/.github/workflows/sync.yml",
-                               headers=gh_headers, json={"message": "disable auto-sync", "sha": wf.json()["sha"]}, timeout=10)
-                    logger.info("Deleted sync workflow from %s/%s", owner, repo_name)
-            except Exception as e:
-                logger.warning("Failed to delete sync workflow: %s", e)
         logger.info("Auto-sync disabled")
 
     auto_sync = _get_autosync_status()
     return _render("partials/autosync_status.html", auto_sync=auto_sync)
-
-
-# ── Vercel / Cloud endpoints ──────────────────────────────────────────────
-
-
-def _minutes_to_cron(minutes: int) -> str:
-    """Convert an interval in minutes to a GitHub Actions cron expression.
-
-    Supports the discrete values exposed in the dashboard select:
-    30, 60, 120, 240, 360, 720, 1440. Falls back to '0 */2 * * *' for
-    anything unexpected.
-    """
-    if minutes == 30:
-        return "*/30 * * * *"
-    if minutes == 60:
-        return "0 * * * *"
-    if minutes == 1440:
-        return "0 0 * * *"
-    if minutes >= 60 and minutes % 60 == 0:
-        hours = minutes // 60
-        return f"0 */{hours} * * *"
-    return "0 */2 * * *"
-
-
-def _build_sync_workflow_yaml(interval_minutes: int) -> str:
-    """Build the sync.yml workflow content with the given cron interval."""
-    cron = _minutes_to_cron(interval_minutes)
-    return (
-        "name: Sync Workouts\n\n"
-        "on:\n"
-        "  schedule:\n"
-        f"    - cron: '{cron}'\n"
-        "  workflow_dispatch: {}\n"
-        "  repository_dispatch:\n"
-        "    types: [sync-trigger]\n\n"
-        "concurrency:\n"
-        "  group: sync\n"
-        "  cancel-in-progress: false\n\n"
-        "jobs:\n"
-        "  sync:\n"
-        "    runs-on: ubuntu-latest\n"
-        "    timeout-minutes: 30\n"
-        "    steps:\n"
-        "      - uses: actions/checkout@v4\n"
-        "      - uses: actions/setup-python@v5\n"
-        "        with:\n"
-        "          python-version: '3.12'\n"
-        "      - name: Install\n"
-        "        run: pip install \".[cloud]\"\n"
-        "      - name: Sync\n"
-        "        env:\n"
-        "          DATABASE_URL: ${{ secrets.DATABASE_URL }}\n"
-        "        run: liftosaur2garmin sync\n"
-    )
-
-
-def _format_interval_label(minutes: int) -> str:
-    """Human-friendly label for interval (e.g., '30 minutes', '1 hour', '2 hours')."""
-    if minutes < 60:
-        return f"{minutes} minutes"
-    if minutes == 60:
-        return "1 hour"
-    if minutes == 1440:
-        return "24 hours"
-    if minutes % 60 == 0:
-        return f"{minutes // 60} hours"
-    return f"{minutes} minutes"
-
-
-async def _setup_github_actions(interval_minutes: int = 120) -> tuple[bool, str]:
-    """Configure GitHub Actions on the user's fork.
-
-    Parallelizes independent GitHub API calls (PATCH repo, PUT actions,
-    GET public-key, GET workflow) to keep latency low. Returns (ok, message).
-    """
-    import asyncio
-    from base64 import b64encode
-
-    pat = os.environ.get("GITHUB_PAT")
-    owner = os.environ.get("VERCEL_GIT_REPO_OWNER")
-    repo = os.environ.get("VERCEL_GIT_REPO_SLUG")
-    database_url = db.get_database_url()
-
-    if not pat:
-        return False, "GITHUB_PAT not set"
-    if not owner or not repo:
-        return False, "Not deployed via Vercel (missing repo info)"
-    if not database_url:
-        return False, "DATABASE_URL not set"
-
-    import requests as req
-
-    headers = {
-        "Authorization": f"Bearer {pat}",
-        "Accept": "application/vnd.github+json",
-    }
-    base = f"https://api.github.com/repos/{owner}/{repo}"
-    wf_url = f"{base}/contents/.github/workflows/sync.yml"
-
-    # Round 1 (parallel): independent calls
-    def _patch_public():
-        return req.patch(base, headers=headers, json={"private": False}, timeout=10)
-
-    def _enable_actions():
-        return req.put(f"{base}/actions/permissions", headers=headers, json={"enabled": True}, timeout=10)
-
-    def _get_public_key():
-        return req.get(f"{base}/actions/secrets/public-key", headers=headers, timeout=10)
-
-    def _get_workflow():
-        return req.get(wf_url, headers=headers, timeout=10)
-
-    try:
-        _, actions_resp, pk_resp, wf_resp = await asyncio.gather(
-            asyncio.to_thread(_patch_public),
-            asyncio.to_thread(_enable_actions),
-            asyncio.to_thread(_get_public_key),
-            asyncio.to_thread(_get_workflow),
-        )
-
-        if actions_resp.status_code not in (200, 204):
-            return False, f"Failed to enable Actions: HTTP {actions_resp.status_code}"
-        if not pk_resp.ok:
-            return False, f"Failed to get repo public key: HTTP {pk_resp.status_code}"
-
-        # Encrypt the secret with the public key (CPU-bound, fast)
-        from nacl import encoding, public
-
-        pk_data = pk_resp.json()
-        pk = public.PublicKey(pk_data["key"].encode("utf-8"), encoding.Base64Encoder())
-        sealed = public.SealedBox(pk).encrypt(database_url.encode("utf-8"))
-        encrypted_value = b64encode(sealed).decode("utf-8")
-
-        sync_yml = _build_sync_workflow_yaml(interval_minutes)
-        wf_payload: dict = {
-            "message": f"feat: auto-sync every {_format_interval_label(interval_minutes)}",
-            "content": b64encode(sync_yml.encode()).decode(),
-        }
-        if wf_resp.status_code == 200:
-            wf_payload["sha"] = wf_resp.json().get("sha")
-
-        # Round 2 (parallel): writes
-        def _put_secret():
-            return req.put(
-                f"{base}/actions/secrets/DATABASE_URL",
-                headers=headers,
-                json={"encrypted_value": encrypted_value, "key_id": pk_data["key_id"]},
-                timeout=10,
-            )
-
-        def _put_workflow():
-            return req.put(wf_url, headers=headers, json=wf_payload, timeout=10)
-
-        secret_resp, _ = await asyncio.gather(
-            asyncio.to_thread(_put_secret),
-            asyncio.to_thread(_put_workflow),
-        )
-
-        if secret_resp.status_code not in (200, 201, 204):
-            return False, f"Failed to set DATABASE_URL secret: HTTP {secret_resp.status_code}"
-
-        # Fire-and-forget initial sync trigger (don't block on it)
-        async def _trigger_initial_sync():
-            try:
-                await asyncio.to_thread(
-                    lambda: req.post(
-                        f"{base}/dispatches",
-                        headers=headers,
-                        json={"event_type": "sync-trigger"},
-                        timeout=10,
-                    )
-                )
-            except Exception:
-                pass
-
-        asyncio.create_task(_trigger_initial_sync())
-
-        return True, f"Auto-sync enabled! Workouts will sync every {_format_interval_label(interval_minutes)}."
-    except Exception as e:
-        return False, f"Failed to set up auto-sync: {e}"
-
-
-@app.post("/api/setup-actions", response_class=HTMLResponse)
-async def api_setup_actions(request: Request):
-    """Auto-configure GitHub Actions on the user's fork."""
-    interval = 120
-    try:
-        form = await request.form()
-        interval = int(form.get("interval", 120))
-    except Exception:
-        pass
-    ok, msg = await _setup_github_actions(interval_minutes=interval)
-    cls = "toast-success" if ok else "toast-error"
-    return HTMLResponse(f'<div class="toast {cls}">{msg}</div>')
 
 
 @app.post("/api/sync-one")
@@ -1736,10 +1492,10 @@ async def _do_sync_one(request: Request):
 
 @app.get("/api/cron/sync")
 async def cron_sync(request: Request):
-    """Vercel cron endpoint. Syncs 1 workout per invocation."""
+    """HTTP-triggerable endpoint that syncs one workout per invocation."""
     from fastapi.responses import JSONResponse
 
-    # Vercel sets CRON_SECRET to verify cron requests
+    # CRON_SECRET, if set, verifies the caller via a shared-secret Bearer token.
     cron_secret = os.environ.get("CRON_SECRET")
     if cron_secret:
         auth = request.headers.get("authorization")

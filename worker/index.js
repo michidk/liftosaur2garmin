@@ -1,7 +1,7 @@
 /**
  * Cloudflare Worker: Garmin OAuth ticket exchange proxy.
  *
- * Garmin blocks token exchange from AWS/Azure IPs (Vercel, GitHub Actions).
+ * Garmin blocks token exchange from major cloud-provider IP ranges and GitHub Actions runners.
  * This Worker runs on Cloudflare's edge network, which uses different IP ranges.
  *
  * POST /exchange { ticket }
@@ -15,7 +15,7 @@ const CONSUMER_URL = "https://thegarth.s3.amazonaws.com/oauth_consumer.json";
 const API_BASE = "https://connectapi.garmin.com";
 const USER_AGENT = "com.garmin.android.apps.connectmobile";
 
-// CORS headers for any origin (called from user's Vercel app)
+// CORS headers for any origin (called from the hosted dashboard app)
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",

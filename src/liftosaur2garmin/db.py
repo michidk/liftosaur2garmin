@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 _instance: Database | None = None
 
-# Vercel Neon integration sets env vars with a custom prefix (default: STORAGE).
+# Some hosting providers (e.g. Neon) set Postgres connection env vars with a custom prefix.
 # Check all common names so users don't have to change the prefix.
 # Prefer pooled URLs (pgbouncer) for faster connections on serverless
 _POSTGRES_URL_VARS = [

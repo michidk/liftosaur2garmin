@@ -6,4 +6,3 @@ requests>=2.31
 python-dotenv>=1.0
 fit-tool>=0.9.15
 psycopg2-binary>=2.9
-pynacl>=1.5

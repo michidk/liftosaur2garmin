@@ -49,22 +49,6 @@
 </div>
 {% endif %}
 
-{% if needs_actions_setup %}
-<div id="actions-setup-card" class="card" style="margin-bottom: 20px; border-color: rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.06);">
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        <span style="font-weight: 600; color: var(--blue);">Setting up automatic sync...</span>
-    </div>
-    <div id="actions-setup-result"
-         hx-post="/api/setup-actions"
-         hx-trigger="load"
-         hx-swap="innerHTML">
-        <span class="spinner" style="display: inline-block;"></span>
-        <span style="font-size: 13px; color: var(--text-muted);">Enabling GitHub Actions and configuring secrets...</span>
-    </div>
-</div>
-{% endif %}
-
 {% if synced_count == 0 and workout_total > 0 %}
 <div class="card" style="margin-bottom: 20px; text-align: center; padding: 32px 20px; border-color: rgba(16, 185, 129, 0.3);">
     <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">{{ workout_total }} workouts ready to sync</div>
