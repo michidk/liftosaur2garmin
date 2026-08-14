@@ -8,7 +8,7 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import requests
 
@@ -174,6 +174,8 @@ class GarminAuthSession:
         self.csrf_token: str | None = None
         self.display_name: str | None = None
         self.full_name: str | None = None
+        self._email = ""
+        self._token_persister: Callable[[dict[str, Any]], object] | None = None
         self._mfa_method = "email"
         self._mfa_url: str | None = None
         self._mfa_params: dict[str, str] | None = None
@@ -191,6 +193,7 @@ class GarminAuthSession:
         prompt_mfa=None,
         return_on_mfa: bool = False,
     ) -> tuple[str | None, "GarminAuthSession" | None]:
+        self._email = email
         last_error: Exception | None = None
         for method in (self._portal_web_login, self._mobile_login):
             try:
@@ -252,7 +255,7 @@ class GarminAuthSession:
         return {
             "schema_version": TOKEN_SCHEMA_VERSION,
             "kind": "garmin_native_auth",
-            "email": email or "",
+            "email": self._email if email is None else email,
             "auth": {
                 "di_token": self.di_token,
                 "di_refresh_token": self.di_refresh_token,
@@ -271,6 +274,7 @@ class GarminAuthSession:
         auth = payload.get("auth")
         if not isinstance(auth, dict):
             raise GarminConnectConnectionError("Garmin token payload is missing auth data")
+        self._email = str(payload.get("email") or "")
         self.di_token = auth.get("di_token")
         self.di_refresh_token = auth.get("di_refresh_token")
         self.di_client_id = auth.get("di_client_id")
@@ -281,6 +285,10 @@ class GarminAuthSession:
         _load_cookies(self.session, auth.get("cookies"))
         if not self.is_authenticated:
             raise GarminConnectAuthenticationError("Garmin token payload does not contain usable auth state")
+
+    def set_token_persister(self, persister: Callable[[dict[str, Any]], object]) -> None:
+        """Persist rotated credentials after every successful token refresh."""
+        self._token_persister = persister
 
     def save(self, path: str, email: str | None = None) -> Path:
         token_path = _token_path(path)
@@ -528,12 +536,14 @@ class GarminAuthSession:
         )
         if not response.ok:
             raise GarminConnectAuthenticationError(
-                f"Garmin token refresh failed: {response.status_code} {response.text[:200]}"
+                f"Garmin token refresh failed: HTTP {response.status_code}"
             )
         data = _json_or_raise(response, "Garmin token refresh failed")
         self.di_token = data.get("access_token")
         self.di_refresh_token = data.get("refresh_token", self.di_refresh_token)
         self.di_client_id = self._extract_client_id_from_jwt(self.di_token) or self.di_client_id
+        if self._token_persister:
+            self._token_persister(self.token_payload())
 
     def _load_profile(self) -> None:
         for path in ("/userprofile-service/socialProfile", "/userprofile-service/userprofile/user-settings"):
@@ -800,6 +810,9 @@ def get_client(
             raise
         auth.login(email, password, prompt_mfa=None)
         save_token_payload(auth.token_payload(email), token_dir=token_dir)
+    auth.set_token_persister(
+        lambda payload: save_token_payload(payload, token_dir=token_dir)
+    )
     return GarminClient(auth)
 
 
