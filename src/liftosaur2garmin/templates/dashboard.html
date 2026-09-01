@@ -252,87 +252,86 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         <span class="card-title" style="margin: 0;">Pipeline</span>
     </div>
-    <svg viewBox="0 0 800 240" style="width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg">
-        <!-- ═══ TOP ROW: Liftosaur → Map → FIT → Garmin ═══ -->
+    <svg viewBox="0 0 800 235" style="width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shared source flow -->
+        <rect x="10" y="15" width="135" height="58" rx="8" fill="rgba(99,102,241,0.1)" stroke="rgba(99,102,241,0.35)"/>
+        <line x1="10" y1="18" x2="145" y2="18" stroke="#6366f1" stroke-width="3"/>
+        <text x="77" y="41" text-anchor="middle" fill="#818cf8" font-size="12.5" font-weight="700" font-family="Inter,sans-serif">Liftosaur API</text>
+        <text x="77" y="57" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">Fetch workout</text>
 
-        <!-- 1. Liftosaur API — Liftosaur brand indigo/blue -->
-        <rect x="10" y="15" width="155" height="62" rx="8" fill="rgba(99,102,241,0.1)" stroke="rgba(99,102,241,0.35)" stroke-width="1"/>
-        <line x1="10" y1="18" x2="165" y2="18" stroke="#6366f1" stroke-width="3"/>
-        <text x="87" y="43" text-anchor="middle" fill="#818cf8" font-size="13" font-weight="700" font-family="Inter,sans-serif">Liftosaur API</text>
-        <text x="87" y="60" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">Fetch workouts</text>
+        <line x1="150" y1="44" x2="172" y2="44" stroke="#64748b" stroke-width="1.5"/>
+        <polygon points="169,39 178,44 169,49" fill="#64748b"/>
 
-        <!-- Arrow → -->
-        <line x1="170" y1="46" x2="210" y2="46" stroke="#64748b" stroke-width="1.5"/>
-        <polygon points="206,41 215,46 206,51" fill="#64748b"/>
+        <rect x="180" y="15" width="135" height="58" rx="8" fill="rgba(168,85,247,0.08)" stroke="rgba(168,85,247,0.3)"/>
+        <line x1="180" y1="18" x2="315" y2="18" stroke="#a855f7" stroke-width="3"/>
+        <text x="247" y="41" text-anchor="middle" fill="#c084fc" font-size="12.5" font-weight="700" font-family="Inter,sans-serif">Map Exercises</text>
+        <text x="247" y="57" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">{{ mapping_count }} categories</text>
 
-        <!-- 2. Map Exercises — purple (transformation) -->
-        <rect x="220" y="15" width="155" height="62" rx="8" fill="rgba(168,85,247,0.08)" stroke="rgba(168,85,247,0.3)" stroke-width="1"/>
-        <line x1="220" y1="18" x2="375" y2="18" stroke="#a855f7" stroke-width="3"/>
-        <text x="297" y="43" text-anchor="middle" fill="#c084fc" font-size="13" font-weight="700" font-family="Inter,sans-serif">Map Exercises</text>
-        <text x="297" y="60" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">{{ mapping_count }} categories</text>
+        <line x1="320" y1="44" x2="335" y2="44" stroke="#64748b" stroke-width="1.5"/>
+        <polygon points="332,39 341,44 332,49" fill="#64748b"/>
 
-        <!-- Arrow → -->
-        <line x1="380" y1="46" x2="420" y2="46" stroke="#64748b" stroke-width="1.5"/>
-        <polygon points="416,41 425,46 416,51" fill="#64748b"/>
+        <!-- Existing-activity decision -->
+        <polygon points="390,10 440,44 390,78 340,44" fill="rgba(59,130,246,0.08)" stroke="rgba(96,165,250,0.5)"/>
+        <text x="390" y="40" text-anchor="middle" fill="#60a5fa" font-size="10.5" font-weight="700" font-family="Inter,sans-serif">Garmin activity</text>
+        <text x="390" y="53" text-anchor="middle" fill="#60a5fa" font-size="10.5" font-weight="700" font-family="Inter,sans-serif">already exists?</text>
 
-        <!-- 3. Generate FIT — amber/orange (building) -->
-        <rect x="430" y="15" width="165" height="62" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.3)" stroke-width="1"/>
-        <line x1="430" y1="18" x2="595" y2="18" stroke="#f59e0b" stroke-width="3"/>
-        <text x="512" y="43" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="700" font-family="Inter,sans-serif">Generate FIT</text>
-        <text x="512" y="60" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">+ HR data + calories</text>
+        <!-- Yes: update the watch-recorded activity in place -->
+        <line x1="440" y1="44" x2="477" y2="44" stroke="#22c55e" stroke-width="1.8"/>
+        <polygon points="473,39 482,44 473,49" fill="#22c55e"/>
+        <text x="459" y="35" text-anchor="middle" fill="#22c55e" font-size="9.5" font-weight="700" font-family="Inter,sans-serif">YES</text>
 
-        <!-- Arrow → -->
-        <line x1="600" y1="46" x2="635" y2="46" stroke="#64748b" stroke-width="1.5"/>
-        <polygon points="631,41 640,46 631,51" fill="#64748b"/>
+        <rect x="485" y="15" width="140" height="58" rx="8" fill="rgba(34,197,94,0.08)" stroke="rgba(34,197,94,0.35)"/>
+        <line x1="485" y1="18" x2="625" y2="18" stroke="#22c55e" stroke-width="3"/>
+        <text x="555" y="41" text-anchor="middle" fill="#4ade80" font-size="12" font-weight="700" font-family="Inter,sans-serif">Update Existing</text>
+        <text x="555" y="57" text-anchor="middle" fill="#64748b" font-size="9.5" font-family="Inter,sans-serif">Sets + title + description</text>
 
-        <!-- 4. Garmin — Garmin brand blue -->
-        <rect x="645" y="15" width="145" height="62" rx="8" fill="rgba(0,135,90,0.1)" stroke="rgba(0,135,90,0.35)" stroke-width="1"/>
-        <line x1="645" y1="18" x2="790" y2="18" stroke="#00875a" stroke-width="3"/>
-        <text x="717" y="43" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700" font-family="Inter,sans-serif">Garmin</text>
-        <text x="717" y="60" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">Upload activity</text>
+        <line x1="630" y1="44" x2="647" y2="44" stroke="#22c55e" stroke-width="1.8"/>
+        <polygon points="644,39 653,44 644,49" fill="#22c55e"/>
 
-        <!-- ═══ BOTTOM: HR enrichment loop ═══ -->
+        <rect x="655" y="15" width="135" height="58" rx="8" fill="rgba(0,135,90,0.1)" stroke="rgba(0,135,90,0.35)"/>
+        <line x1="655" y1="18" x2="790" y2="18" stroke="#00875a" stroke-width="3"/>
+        <text x="722" y="41" text-anchor="middle" fill="#34d399" font-size="12.5" font-weight="700" font-family="Inter,sans-serif">Garmin Activity</text>
+        <text x="722" y="57" text-anchor="middle" fill="#64748b" font-size="9.5" font-family="Inter,sans-serif">Recorded HR preserved</text>
 
-        <!-- ↓ Garmin → Fetch HR (data comes from Garmin) -->
-        <line x1="717" y1="82" x2="717" y2="120" stroke="#00875a" stroke-width="2"/>
-        <polygon points="711,116 717,126 723,116" fill="#00875a"/>
+        <!-- No: enrich and upload a new FIT activity -->
+        <line x1="390" y1="78" x2="390" y2="122" stroke="#f43f5e" stroke-width="1.8"/>
+        <polygon points="385,118 390,127 395,118" fill="#f43f5e"/>
+        <text x="400" y="103" fill="#f43f5e" font-size="9.5" font-weight="700" font-family="Inter,sans-serif">NO</text>
 
-        <!-- 5. Fetch HR Data (directly under Garmin — Garmin is the source) -->
-        <rect x="645" y="130" width="145" height="55" rx="8" fill="rgba(0,135,90,0.06)" stroke="rgba(0,135,90,0.3)" stroke-width="1" stroke-dasharray="6,3"/>
-        <text x="717" y="153" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600" font-family="Inter,sans-serif">Fetch HR Data</text>
-        <text x="717" y="168" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">Daily watch monitoring</text>
+        <rect x="10" y="130" width="155" height="58" rx="8" fill="rgba(0,135,90,0.06)" stroke="rgba(0,135,90,0.3)" stroke-dasharray="6,3"/>
+        <text x="87" y="154" text-anchor="middle" fill="#34d399" font-size="11.5" font-weight="700" font-family="Inter,sans-serif">Garmin Daily HR</text>
+        <text x="87" y="170" text-anchor="middle" fill="#64748b" font-size="9.5" font-family="Inter,sans-serif">Watch background data</text>
 
-        <!-- ← Fetch HR → Match HR -->
-        <line x1="640" y1="157" x2="602" y2="157" stroke="#f43f5e" stroke-width="2"/>
-        <polygon points="606,152 597,157 606,162" fill="#f43f5e"/>
+        <line x1="170" y1="159" x2="307" y2="159" stroke="#f43f5e" stroke-width="1.8"/>
+        <polygon points="303,154 312,159 303,164" fill="#f43f5e"/>
 
-        <!-- 6. Match HR & Calc Calories (directly under Generate FIT) -->
-        <rect x="430" y="130" width="165" height="55" rx="8" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.4)" stroke-width="1"/>
-        <line x1="430" y1="133" x2="595" y2="133" stroke="#f43f5e" stroke-width="3"/>
-        <text x="512" y="153" text-anchor="middle" fill="#f43f5e" font-size="11.5" font-weight="700" font-family="Inter,sans-serif">Match HR &amp; Calc Cal</text>
-        <text x="512" y="168" text-anchor="middle" fill="#64748b" font-size="10" font-family="Inter,sans-serif">Align HR to exercises</text>
+        <rect x="315" y="130" width="150" height="58" rx="8" fill="rgba(244,63,94,0.08)" stroke="rgba(244,63,94,0.4)"/>
+        <line x1="315" y1="133" x2="465" y2="133" stroke="#f43f5e" stroke-width="3"/>
+        <text x="390" y="154" text-anchor="middle" fill="#f43f5e" font-size="11.5" font-weight="700" font-family="Inter,sans-serif">Fetch &amp; Match HR</text>
+        <text x="390" y="170" text-anchor="middle" fill="#64748b" font-size="9.5" font-family="Inter,sans-serif">Workout time window</text>
 
-        <!-- ↑ Match HR → Generate FIT ("enriches") -->
-        <line x1="470" y1="127" x2="470" y2="82" stroke="#f43f5e" stroke-width="2" stroke-dasharray="6,3"/>
-        <polygon points="464,86 470,77 476,86" fill="#f43f5e"/>
-        <text x="480" y="108" fill="#f43f5e" font-size="9.5" font-weight="600" font-family="Inter,sans-serif">enriches</text>
+        <line x1="470" y1="159" x2="482" y2="159" stroke="#64748b" stroke-width="1.5"/>
+        <polygon points="479,154 488,159 479,164" fill="#64748b"/>
 
-        <!-- Fallback -->
-        <text x="575" y="207" text-anchor="middle" fill="#475569" font-size="9.5" font-style="italic" font-family="Inter,sans-serif">No watch HR? Falls back to default 90 bpm estimate</text>
+        <rect x="490" y="130" width="135" height="58" rx="8" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.3)"/>
+        <line x1="490" y1="133" x2="625" y2="133" stroke="#f59e0b" stroke-width="3"/>
+        <text x="557" y="154" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700" font-family="Inter,sans-serif">Generate FIT</text>
+        <text x="557" y="170" text-anchor="middle" fill="#64748b" font-size="9.5" font-family="Inter,sans-serif">Exercises + HR + calories</text>
 
-        <!-- Legend -->
-        <line x1="410" y1="228" x2="440" y2="228" stroke="#64748b" stroke-width="1.5"/>
-        <polygon points="436,224 444,228 436,232" fill="#64748b"/>
-        <text x="450" y="232" fill="#64748b" font-size="9.5" font-family="Inter,sans-serif">sync flow</text>
-        <line x1="530" y1="228" x2="560" y2="228" stroke="#f43f5e" stroke-width="1.5"/>
-        <polygon points="556,224 564,228 556,232" fill="#f43f5e"/>
-        <text x="570" y="232" fill="#f43f5e" font-size="9.5" font-family="Inter,sans-serif">HR enrichment</text>
+        <line x1="630" y1="159" x2="647" y2="159" stroke="#64748b" stroke-width="1.5"/>
+        <polygon points="644,154 653,159 644,164" fill="#64748b"/>
+
+        <rect x="655" y="130" width="135" height="58" rx="8" fill="rgba(0,135,90,0.1)" stroke="rgba(0,135,90,0.35)"/>
+        <line x1="655" y1="133" x2="790" y2="133" stroke="#00875a" stroke-width="3"/>
+        <text x="722" y="154" text-anchor="middle" fill="#34d399" font-size="12" font-weight="700" font-family="Inter,sans-serif">Upload New</text>
+        <text x="722" y="170" text-anchor="middle" fill="#64748b" font-size="9.5" font-family="Inter,sans-serif">Garmin activity</text>
+
+        <text x="552" y="211" text-anchor="middle" fill="#475569" font-size="9.5" font-style="italic" font-family="Inter,sans-serif">No daily HR available? FIT uses the default 90 bpm calorie estimate; no later automatic backfill.</text>
     </svg>
 
     <!-- Explanation -->
     <div style="margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); font-size: 11px; color: var(--text-muted); line-height: 1.6;">
-        <strong style="color: var(--text-secondary);">HR Fusion</strong> pulls your Garmin watch's daily heart rate monitoring and aligns it to each workout's time window, producing an HR timeline with color-coded exercise segments.
-        Cached locally after first load.
+        <strong style="color: var(--text-secondary);">Two sync paths:</strong> a matching watch-recorded Garmin activity is updated in place and keeps its recorded HR. Otherwise, daily watch HR is matched before a new enriched FIT activity is uploaded.
         <a href="/settings" style="font-size: 11px;">Configure &rarr;</a>
     </div>
 </div>
