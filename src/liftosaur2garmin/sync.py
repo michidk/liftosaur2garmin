@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,59 @@ from liftosaur2garmin.liftosaur import LiftosaurClient
 from liftosaur2garmin.mapper import lookup_exercise
 
 logger = logging.getLogger("liftosaur2garmin")
+
+
+def fetch_workout_hr_samples(garmin_client, workout: dict) -> list[int]:
+    """Fetch Garmin daily HR samples that fall inside a workout window.
+
+    Garmin's wellness endpoint returns timestamped daily-monitoring samples,
+    while ``generate_fit`` accepts an ordered list of BPM values. HR lookup is
+    deliberately best-effort: a missing day, invalid workout timestamps, or a
+    Garmin API failure must not prevent the workout itself from syncing.
+    """
+    from liftosaur2garmin.fit import parse_timestamp
+
+    start_raw = workout.get("start_time") or workout.get("startTime")
+    end_raw = workout.get("end_time") or workout.get("endTime")
+    start_dt = parse_timestamp(start_raw) if start_raw else None
+    end_dt = parse_timestamp(end_raw) if end_raw else None
+    if not start_dt or not end_dt or end_dt <= start_dt:
+        logger.warning("  Cannot fetch HR: workout has no valid time window")
+        return []
+
+    start_ms = round(start_dt.timestamp() * 1000)
+    end_ms = round(end_dt.timestamp() * 1000)
+    first_date = start_dt.date()
+    last_date = end_dt.date()
+    samples: list[tuple[int, int]] = []
+
+    try:
+        current_date = first_date
+        while current_date <= last_date:
+            daily_hr = garmin_client.get_heart_rates(current_date.isoformat())
+            values = daily_hr.get("heartRateValues", []) if isinstance(daily_hr, dict) else []
+            for entry in values:
+                if not isinstance(entry, (list, tuple)) or len(entry) < 2:
+                    continue
+                timestamp, bpm = entry[0], entry[1]
+                if not isinstance(timestamp, (int, float)) or not isinstance(bpm, (int, float)):
+                    continue
+                bpm_value = round(bpm)
+                if start_ms <= timestamp <= end_ms and 1 <= bpm_value <= 255:
+                    samples.append((round(timestamp), bpm_value))
+            current_date += timedelta(days=1)
+    except Exception as exc:
+        logger.warning("  Could not fetch Garmin HR; using fallback estimate: %s", exc)
+        return []
+
+    # Daily documents can overlap around midnight; keep one value per timestamp.
+    deduplicated = dict(samples)
+    result = [bpm for _, bpm in sorted(deduplicated.items())]
+    if result:
+        logger.info("  HR: %d Garmin samples", len(result))
+    else:
+        logger.info("  No Garmin HR samples found in workout window; using fallback estimate")
+    return result
 
 
 def _remove_zero_rep_sets(garmin_sets: list[dict], workout: dict) -> list[dict]:
@@ -319,7 +373,12 @@ def sync(
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 fit_path = str(Path(tmp) / f"{wid}.fit")
-                result = generate_fit(workout, hr_samples=None, output_path=fit_path)
+                hr_samples = (
+                    fetch_workout_hr_samples(garmin_client, workout)
+                    if garmin_client and cfg.get("hr_fusion", {}).get("enabled", True)
+                    else []
+                )
+                result = generate_fit(workout, hr_samples=hr_samples, output_path=fit_path)
                 logger.info(
                     "  FIT: %d exercises, %d sets, %d cal",
                     result["exercises"], result["total_sets"], result["calories"],

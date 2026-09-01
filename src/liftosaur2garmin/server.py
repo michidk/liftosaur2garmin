@@ -1212,7 +1212,7 @@ async def api_sync_single(request: Request, workout_id: str):
         from liftosaur2garmin.liftosaur import LiftosaurClient
         from liftosaur2garmin.fit import generate_fit
         from liftosaur2garmin.garmin import get_client, rename_activity, set_description, upload_fit, generate_description, find_activity_by_start_time
-        from liftosaur2garmin.sync import update_existing_activity_sets
+        from liftosaur2garmin.sync import fetch_workout_hr_samples, update_existing_activity_sets
         import tempfile
 
         # force_upload=true skips dedup (used by re-sync after edit)
@@ -1233,6 +1233,11 @@ async def api_sync_single(request: Request, workout_id: str):
 
         garmin_client = get_client(config.get("garmin_email"))
         workout_start = workout.get("start_time")
+        hr_samples = (
+            fetch_workout_hr_samples(garmin_client, workout)
+            if config.get("hr_fusion", {}).get("enabled", True)
+            else []
+        )
 
         # Dedup: check if activity already exists on Garmin (skip if force)
         update_existing, match_window = get_update_existing(config)
@@ -1242,7 +1247,7 @@ async def api_sync_single(request: Request, workout_id: str):
 
         with tempfile.TemporaryDirectory() as tmp:
             fit_path = f"{tmp}/{workout_id}.fit"
-            result = generate_fit(workout, hr_samples=None, output_path=fit_path)
+            result = generate_fit(workout, hr_samples=hr_samples, output_path=fit_path)
             if existing_id:
                 aid = existing_id
                 logger.info("Activity already on Garmin (%s), updating sets", aid)
@@ -1384,7 +1389,7 @@ async def _do_sync_one(request: Request):
     from liftosaur2garmin.liftosaur import LiftosaurAuthError, LiftosaurClient
     from liftosaur2garmin.garmin import get_client, upload_fit, rename_activity, set_description, generate_description
     from liftosaur2garmin.fit import generate_fit
-    from liftosaur2garmin.sync import update_existing_activity_sets
+    from liftosaur2garmin.sync import fetch_workout_hr_samples, update_existing_activity_sets
     import tempfile
 
     client = LiftosaurClient(api_key=liftosaur_api_key)
@@ -1437,6 +1442,11 @@ async def _do_sync_one(request: Request):
         from liftosaur2garmin.garmin import find_activity_by_start_time
         garmin_client = get_client(config.get("garmin_email"))
         workout_start = unsynced.get("start_time")
+        hr_samples = (
+            fetch_workout_hr_samples(garmin_client, unsynced)
+            if config.get("hr_fusion", {}).get("enabled", True)
+            else []
+        )
 
         # Dedup: check if this workout already exists on Garmin before uploading.
         # Prevents duplicates when a prior sync uploaded successfully but crashed
@@ -1453,14 +1463,14 @@ async def _do_sync_one(request: Request):
             # Still generate FIT to get calorie estimate
             with tempfile.TemporaryDirectory() as tmp:
                 fit_path = f"{tmp}/{unsynced['id']}.fit"
-                result = generate_fit(unsynced, hr_samples=None, output_path=fit_path)
+                result = generate_fit(unsynced, hr_samples=hr_samples, output_path=fit_path)
             rename_activity(garmin_client, aid, unsynced["title"])
             desc = generate_description(unsynced, calories=result.get("calories"), avg_hr=result.get("avg_hr"))
             set_description(garmin_client, aid, desc)
         else:
             with tempfile.TemporaryDirectory() as tmp:
                 fit_path = f"{tmp}/{unsynced['id']}.fit"
-                result = generate_fit(unsynced, hr_samples=None, output_path=fit_path)
+                result = generate_fit(unsynced, hr_samples=hr_samples, output_path=fit_path)
                 upload_result = upload_fit(garmin_client, fit_path, workout_start=workout_start)
                 aid = upload_result.get("activity_id")
                 if aid:
