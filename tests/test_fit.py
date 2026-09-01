@@ -48,6 +48,37 @@ class TestFITGeneration:
         result = generate_fit(sample_workout, hr_samples=None, output_path=path, profile=sample_profile)
         assert result["duration_s"] == 45 * 60  # 45 minutes
 
+    def test_strava_compatible_pair_keeps_original_exercise_title(
+        self, sample_profile: dict, tmp_path: Path
+    ) -> None:
+        workout = {
+            "id": "strava-compatible",
+            "title": "Strava compatibility",
+            "start_time": "2026-08-01T10:00:00+00:00",
+            "end_time": "2026-08-01T10:05:00+00:00",
+            "exercises": [
+                {
+                    "index": 0,
+                    "title": "Pull Up (Weighted)",
+                    "sets": [{"index": 0, "type": "normal", "weight_kg": 10, "reps": 5}],
+                }
+            ],
+        }
+        path = str(tmp_path / "strava-compatible.fit")
+
+        generate_fit(workout, hr_samples=None, output_path=path, profile=sample_profile)
+        messages = [record.message for record in FitFile.from_file(path).records]
+        title = next(message for message in messages if type(message).__name__ == "ExerciseTitleMessage")
+        active_set = next(
+            message
+            for message in messages
+            if type(message).__name__ == "SetMessage" and getattr(message, "set_type", None) == 1
+        )
+
+        assert title.workout_step_name == "Pull Up (Weighted)"
+        assert (title.exercise_category, title.exercise_name) == (21, 38)
+        assert (active_set.category, active_set.category_subtype) == ([21], [38])
+
 
 class TestProfileOverride:
     def test_different_weight_changes_calories(self, sample_workout: dict, tmp_path: Path) -> None:

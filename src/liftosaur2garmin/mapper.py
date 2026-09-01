@@ -19,6 +19,7 @@ FIT SDK exercise categories used:
 from __future__ import annotations
 
 from liftosaur2garmin.liftosaur_mappings import LIFTOSAUR_CANONICAL_TO_GARMIN
+from liftosaur2garmin.strava_mappings import STRAVA_COMPATIBLE_GARMIN_MAPPINGS
 
 # --------------------------------------------------------------------------- #
 # Mapping: exercise name  ->  (FIT exercise category, subcategory)
@@ -630,6 +631,11 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
 }
 
 EXERCISE_TO_GARMIN.update(LIFTOSAUR_CANONICAL_TO_GARMIN)
+
+# Garmin renders the original workout_step_name, while Strava classifies sets
+# using the numeric FIT pair. Prefer same-muscle-group variants known to survive
+# Strava's downstream import for the handful of variants it currently drops.
+EXERCISE_TO_GARMIN.update(STRAVA_COMPATIBLE_GARMIN_MAPPINGS)
 
 # --------------------------------------------------------------------------- #
 # Remove any duplicates that crept in (the last assignment wins in Python

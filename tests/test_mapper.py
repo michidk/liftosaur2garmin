@@ -17,6 +17,7 @@ from liftosaur2garmin.mapper import (
     _custom_mappings,
     _ensure_custom_loaded,
 )
+from liftosaur2garmin.strava_mappings import STRAVA_COMPATIBLE_GARMIN_MAPPINGS
 
 
 LIFTOSAUR_BUILTIN_NAMES = frozenset(
@@ -76,7 +77,7 @@ class TestLookupBuiltIn:
             ("Deadlift, Cable", (8, 0)),
             ("Lat Pulldown", (21, 13)),
             ("Seated Row", (23, 18)),
-            ("Lateral Raise", (14, 34)),
+            ("Lateral Raise", (14, 24)),
             ("Bicep Curl", (7, 46)),
             ("Triceps Extension", (30, 15)),
         ],
@@ -124,7 +125,7 @@ class TestLookupBuiltIn:
             "Elliptical Machine": (39, 0),
             "Front Lever Row": (23, 26),
             "Kettlebell Turkish Get Up": (5, 89),
-            "Lateral Raise": (14, 34),
+            "Lateral Raise": (14, 24),
             "Lateral Box Jump": (20, 13),
             "Lying Bicep Curl": (7, 46),
             "Pallof Press": (5, 6),
@@ -135,6 +136,21 @@ class TestLookupBuiltIn:
             "Vertical Row": (23, 10),
         }
         assert {name: lookup_exercise(name)[:2] for name in expected} == expected
+
+    def test_strava_compatibility_fallbacks(self) -> None:
+        expected = {
+            "Military Press": (24, 14),
+            "Pull Up (Weighted)": (21, 38),
+            "Lateral Raise": (14, 24),
+            "Incline Reverse Fly": (9, 5),
+            "Hanging Leg Raise": (16, 0),
+        }
+
+        assert {name: lookup_exercise(name)[:2] for name in expected} == expected
+        assert expected.items() <= STRAVA_COMPATIBLE_GARMIN_MAPPINGS.items()
+
+    def test_strava_compatibility_preserves_original_display_name(self) -> None:
+        assert lookup_exercise("Weighted Pull-up") == (21, 38, "Weighted Pull-up")
 
     def test_equipment_qualified_names_fall_back_to_canonical_mapping(self) -> None:
         expected = {
@@ -168,6 +184,15 @@ class TestCustomMappings:
                 assert subcat == 88
 
         # Cleanup
+        m._custom_mappings.clear()
+
+    def test_custom_mapping_overrides_strava_fallback(self) -> None:
+        import liftosaur2garmin.mapper as m
+
+        m._custom_mappings["Lateral Raise"] = (14, 34)
+
+        assert lookup_exercise("Lateral Raise")[:2] == (14, 34)
+
         m._custom_mappings.clear()
 
     def test_custom_does_not_affect_other_exercises(self) -> None:
