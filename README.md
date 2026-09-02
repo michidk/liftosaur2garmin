@@ -184,32 +184,6 @@ Worker tests:
 node --test worker-di/index.test.js
 ```
 
-## Garmin-to-Strava Exercise Compatibility
-
-Garmin and Strava classify strength sets from the FIT `category` and
-`category_subtype` numbers; Strava does not copy the exercise label rendered by
-Garmin Connect. Strava documents support for all FIT SDK exercises, with some
-mapped to broader names in Strava.
-
-The previous `fit-tool` 0.9.15 dependency generated files declaring FIT profile
-21.60, while this project's exercise table contains 17 concrete pairs introduced
-in Garmin profile 21.171. Garmin Connect tolerated that mismatch, but downstream
-importers could interpret the newer numbers as unknown. `fit-tool` 0.9.16 uses
-profile 21.212, which contains every concrete pair currently emitted here.
-
-The tests audit every mapping against the installed FIT profile and verify that
-the generated file header declares that same profile. This catches future
-mappings that require a newer SDK before they can produce inconsistent files.
-Custom mappings are validated against the same profile before they are saved,
-and invalid mappings already present in local or cloud storage are ignored.
-
-References: [Strava FIT upload support](https://developers.strava.com/docs/uploads/),
-[Garmin FIT SDK 21.171](https://github.com/garmin/fit-python-sdk/tree/21.171.0),
-[Garmin FIT SDK 21.212](https://github.com/garmin/fit-python-sdk/tree/21.212.0),
-[`fit-tool` 0.9.16](https://github.com/shaonianche/python_fit_tool/releases/tag/v0.9.16),
-and the upstream project's independent report of the
-[stale-profile limitation](https://github.com/drkostas/hevy2garmin/issues/328).
-
 ## Acknowledgements
 
 This project builds on the open-source work in [`drkostas/hevy2garmin`](https://github.com/drkostas/hevy2garmin) by Konstantinos Georgiou. Liftosaur integration targets the REST API documented at [liftosaur.com/doc/api](https://www.liftosaur.com/doc/api).
