@@ -49,6 +49,12 @@ class TestMap:
         assert subcat == 20
         _custom_mappings.clear()
 
+    def test_rejects_pair_outside_fit_profile(self) -> None:
+        result = run_cli("map", "Invalid Exercise", "--category", "7", "--subcategory", "999")
+
+        assert result.returncode == 1
+        assert "Invalid FIT exercise subcategory 999 for category 7" in result.stderr
+
 
 class TestSyncDryRun:
     def test_dry_run_flag(self) -> None:

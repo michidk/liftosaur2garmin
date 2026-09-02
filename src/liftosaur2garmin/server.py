@@ -1036,27 +1036,26 @@ async def api_save_mapping(request: Request):
     """Save a custom exercise mapping."""
     form = await request.form()
     exercise_name = form.get("exercise_name", "").strip()
-    category = int(form.get("category", 65534))
-    subcategory = int(form.get("subcategory", 0))
 
     if not exercise_name:
         return HTMLResponse('<div class="toast toast-error">Exercise name required</div>')
+
+    try:
+        category = int(form.get("category", 65534))
+        subcategory = int(form.get("subcategory", 0))
+    except (TypeError, ValueError):
+        return HTMLResponse('<div class="toast toast-error">Category and subcategory must be numbers</div>')
 
     # Validate category ID exists
     valid_cats = set(_get_cat_names().keys())
     if category not in valid_cats:
         return HTMLResponse(f'<div class="toast toast-error">Invalid category ID {category}</div>')
 
-    # Save to DB on cloud, filesystem locally
-    if db.get_database_url():
-        _db = db.get_db()
-        if hasattr(_db, "save_custom_mapping"):
-            _db.save_custom_mapping(exercise_name, category, subcategory)
-        from liftosaur2garmin.mapper import update_custom_mapping_cache
-        update_custom_mapping_cache(exercise_name, category, subcategory)
-    else:
-        from liftosaur2garmin.mapper import save_custom_mapping
+    from liftosaur2garmin.mapper import save_custom_mapping
+    try:
         save_custom_mapping(exercise_name, category, subcategory)
+    except ValueError as exc:
+        return HTMLResponse(f'<div class="toast toast-error">{exc}</div>')
 
     global _unmapped_cache
     _unmapped_cache = None

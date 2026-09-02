@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from fit_tool import SDK_VERSION
 from fit_tool.fit_file import FitFile
 from liftosaur2garmin.fit import generate_fit
 
@@ -51,11 +52,11 @@ class TestFITGeneration:
     @pytest.mark.parametrize(
         ("exercise_title", "expected_pair"),
         [
-            ("Lateral Raise", (14, 24)),
-            ("Bicep Curl", (7, 37)),
+            ("Lateral Raise", (14, 34)),
+            ("Bicep Curl", (7, 46)),
         ],
     )
-    def test_strava_compatible_pair_keeps_original_exercise_title(
+    def test_current_profile_serializes_newer_exercise_pairs(
         self,
         exercise_title: str,
         expected_pair: tuple[int, int],
@@ -78,7 +79,8 @@ class TestFITGeneration:
         path = str(tmp_path / "strava-compatible.fit")
 
         generate_fit(workout, hr_samples=None, output_path=path, profile=sample_profile)
-        messages = [record.message for record in FitFile.from_file(path).records]
+        fit_file = FitFile.from_file(path)
+        messages = [record.message for record in fit_file.records]
         title = next(message for message in messages if type(message).__name__ == "ExerciseTitleMessage")
         active_set = next(
             message
@@ -92,6 +94,11 @@ class TestFITGeneration:
             [expected_pair[0]],
             [expected_pair[1]],
         )
+
+        sdk_major, sdk_minor, *_ = (int(part) for part in SDK_VERSION.split("."))
+        header_profile = fit_file.header.profile_version
+        assert (header_profile.major, header_profile.minor) == (sdk_major, sdk_minor)
+        assert (header_profile.major, header_profile.minor) >= (21, 171)
 
 
 class TestProfileOverride:

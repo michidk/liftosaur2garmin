@@ -18,8 +18,14 @@ FIT SDK exercise categories used:
 
 from __future__ import annotations
 
+import logging
+
+import fit_tool.profile.profile_type as fit_profile_types
+from fit_tool.profile.profile_type import ExerciseCategory
+
 from liftosaur2garmin.liftosaur_mappings import LIFTOSAUR_CANONICAL_TO_GARMIN
-from liftosaur2garmin.strava_mappings import STRAVA_COMPATIBLE_GARMIN_PAIRS
+
+logger = logging.getLogger("liftosaur2garmin")
 
 # --------------------------------------------------------------------------- #
 # Mapping: exercise name  ->  (FIT exercise category, subcategory)
@@ -632,16 +638,6 @@ EXERCISE_TO_GARMIN: dict[str, tuple[int, int]] = {
 
 EXERCISE_TO_GARMIN.update(LIFTOSAUR_CANONICAL_TO_GARMIN)
 
-# Both services classify sets using the numeric FIT pair. Replace the two pairs
-# observed as Unknown in Strava with older variants listed in Strava's supported
-# strength taxonomy. Apply by pair so every alias with the same encoding is
-# covered. Custom mappings remain unaffected because lookup_exercise checks
-# them before this table.
-EXERCISE_TO_GARMIN = {
-    exercise_name: STRAVA_COMPATIBLE_GARMIN_PAIRS.get(pair, pair)
-    for exercise_name, pair in EXERCISE_TO_GARMIN.items()
-}
-
 # --------------------------------------------------------------------------- #
 # Remove any duplicates that crept in (the last assignment wins in Python
 # dicts, but let's be explicit about the canonical set).
@@ -653,6 +649,38 @@ _UNKNOWN_SUBCATEGORY = 0
 # Custom user-defined mappings (loaded from ~/.liftosaur2garmin/custom_mappings.json)
 _custom_mappings: dict[str, tuple[int, int]] = {}
 _custom_loaded = False
+
+
+def validate_exercise_pair(category: int, subcategory: int) -> None:
+    """Raise ``ValueError`` unless a pair exists in the installed FIT profile."""
+    try:
+        category_name = ExerciseCategory(category).name
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Invalid FIT exercise category {category}") from exc
+
+    enum_name = "".join(word.title() for word in category_name.lower().split("_")) + "ExerciseName"
+    exercise_names = getattr(fit_profile_types, enum_name, None)
+    if exercise_names is None:
+        raise ValueError(f"FIT category {category} has no exercise subcategories")
+
+    try:
+        exercise_names(subcategory)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Invalid FIT exercise subcategory {subcategory} for category {category}"
+        ) from exc
+
+
+def _load_custom_mapping(exercise_name: str, category: int, subcategory: int) -> bool:
+    """Cache a persisted mapping if the installed FIT profile can encode it."""
+    try:
+        validate_exercise_pair(category, subcategory)
+    except ValueError as exc:
+        logger.warning('Ignoring invalid custom mapping for "%s": %s', exercise_name, exc)
+        return False
+
+    _custom_mappings[exercise_name] = (category, subcategory)
+    return True
 
 
 def _ensure_custom_loaded() -> None:
@@ -668,9 +696,10 @@ def _ensure_custom_loaded() -> None:
 
         database = get_db()
         if hasattr(database, "get_custom_mappings"):
+            loaded_from_database = False
             for name, (cat, subcat) in database.get_custom_mappings().items():
-                _custom_mappings[name] = (cat, subcat)
-            if _custom_mappings:
+                loaded_from_database |= _load_custom_mapping(name, cat, subcat)
+            if loaded_from_database:
                 return
     except Exception:
         pass
@@ -683,13 +712,20 @@ def _ensure_custom_loaded() -> None:
         try:
             data = json.loads(path.read_text())
             for name, pair in data.items():
-                _custom_mappings[name] = (pair[0], pair[1])
-        except (json.JSONDecodeError, OSError, IndexError):
+                try:
+                    category, subcategory = pair
+                except (TypeError, ValueError):
+                    logger.warning('Ignoring malformed custom mapping for "%s"', name)
+                    continue
+                _load_custom_mapping(name, category, subcategory)
+        except (AttributeError, json.JSONDecodeError, OSError):
             pass
 
 
 def save_custom_mapping(exercise_name: str, category: int, subcategory: int) -> None:
     """Save a custom exercise mapping to disk."""
+    validate_exercise_pair(category, subcategory)
+
     try:
         from liftosaur2garmin.db import get_db
 
@@ -719,6 +755,7 @@ def save_custom_mapping(exercise_name: str, category: int, subcategory: int) -> 
 def update_custom_mapping_cache(exercise_name: str, category: int, subcategory: int) -> None:
     """Update the in-memory custom mapping cache."""
     global _custom_loaded
+    validate_exercise_pair(category, subcategory)
     _custom_loaded = True
     _custom_mappings[exercise_name] = (category, subcategory)
 

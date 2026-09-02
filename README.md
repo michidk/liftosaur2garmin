@@ -7,7 +7,7 @@ Sync Liftosaur workouts to Garmin Connect by converting Liftosaur history record
 - Fetches workout history from Liftosaur with a personal API key
 - Parses Liftosaur workout text into exercises, sets, reps, weights, and warmups
 - Uses a Garmin FIT mapping and upload pipeline for Garmin Connect
-- Uses same-muscle-group FIT fallbacks for exercise variants Strava otherwise imports as unknown
+- Declares a current FIT SDK profile so Garmin and downstream apps decode the same exercise taxonomy
 - Supports CLI sync and the FastAPI dashboard flow
 
 ## Requirements
@@ -184,6 +184,32 @@ Worker tests:
 node --test worker-di/index.test.js
 ```
 
+## Garmin-to-Strava Exercise Compatibility
+
+Garmin and Strava classify strength sets from the FIT `category` and
+`category_subtype` numbers; Strava does not copy the exercise label rendered by
+Garmin Connect. Strava documents support for all FIT SDK exercises, with some
+mapped to broader names in Strava.
+
+The previous `fit-tool` 0.9.15 dependency generated files declaring FIT profile
+21.60, while this project's exercise table contains 17 concrete pairs introduced
+in Garmin profile 21.171. Garmin Connect tolerated that mismatch, but downstream
+importers could interpret the newer numbers as unknown. `fit-tool` 0.9.16 uses
+profile 21.212, which contains every concrete pair currently emitted here.
+
+The tests audit every mapping against the installed FIT profile and verify that
+the generated file header declares that same profile. This catches future
+mappings that require a newer SDK before they can produce inconsistent files.
+Custom mappings are validated against the same profile before they are saved,
+and invalid mappings already present in local or cloud storage are ignored.
+
+References: [Strava FIT upload support](https://developers.strava.com/docs/uploads/),
+[Garmin FIT SDK 21.171](https://github.com/garmin/fit-python-sdk/tree/21.171.0),
+[Garmin FIT SDK 21.212](https://github.com/garmin/fit-python-sdk/tree/21.212.0),
+[`fit-tool` 0.9.16](https://github.com/shaonianche/python_fit_tool/releases/tag/v0.9.16),
+and the upstream project's independent report of the
+[stale-profile limitation](https://github.com/drkostas/hevy2garmin/issues/328).
+
 ## Acknowledgements
 
 This project builds on the open-source work in [`drkostas/hevy2garmin`](https://github.com/drkostas/hevy2garmin) by Konstantinos Georgiou. Liftosaur integration targets the REST API documented at [liftosaur.com/doc/api](https://www.liftosaur.com/doc/api).
@@ -192,5 +218,5 @@ This project builds on the open-source work in [`drkostas/hevy2garmin`](https://
 
 - The Liftosaur client normalizes history records into the workout structure expected by the existing Garmin sync pipeline.
 - Exercise mapping includes compatibility logic for Liftosaur-style names such as `Bench Press, Barbell`.
-- The FIT file preserves the original Liftosaur exercise title, while Garmin and Strava can display a name derived from its numeric exercise category and subtype. Two observed Strava gaps use supported variants from the same movement family so the sets remain classified instead of appearing as `Unknown`.
+- Every concrete numeric exercise category and subtype is validated against the installed FIT SDK profile. Generated file headers declare that same profile version so Garmin and downstream apps such as Strava interpret newer exercise values consistently.
 - Hosted Garmin login can run through the repo-owned Cloudflare Worker in [worker-di](./worker-di). Without `GARMIN_AUTH_WORKER_BASE_URL`, hosted setup falls back to token-file import from a local `init` or `serve` flow.
