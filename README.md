@@ -7,7 +7,6 @@ Sync Liftosaur workouts to Garmin Connect by converting Liftosaur history record
 - Fetches workout history from Liftosaur with a personal API key
 - Parses Liftosaur workout text into exercises, sets, reps, weights, and warmups
 - Uses a Garmin FIT mapping and upload pipeline for Garmin Connect
-- Declares a current FIT SDK profile so Garmin and downstream apps decode the same exercise taxonomy
 - Supports CLI sync and the FastAPI dashboard flow
 
 ## Requirements
@@ -192,5 +191,4 @@ This project builds on the open-source work in [`drkostas/hevy2garmin`](https://
 
 - The Liftosaur client normalizes history records into the workout structure expected by the existing Garmin sync pipeline.
 - Exercise mapping includes compatibility logic for Liftosaur-style names such as `Bench Press, Barbell`.
-- Every concrete numeric exercise category and subtype is validated against the installed FIT SDK profile. Generated file headers declare that same profile version so Garmin and downstream apps such as Strava interpret newer exercise values consistently.
 - Hosted Garmin login can run through the repo-owned Cloudflare Worker in [worker-di](./worker-di). Without `GARMIN_AUTH_WORKER_BASE_URL`, hosted setup falls back to token-file import from a local `init` or `serve` flow.
