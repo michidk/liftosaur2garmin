@@ -2,5 +2,5 @@ apiVersion: v2
 name: liftosaur2garmin
 description: Deploy liftosaur2garmin's FastAPI dashboard and sync service, with optional bundled PostgreSQL
 type: application
-version: 0.2.2
-appVersion: "0.2.2"
+version: 0.2.3
+appVersion: "0.2.3"
