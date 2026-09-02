@@ -192,5 +192,5 @@ This project builds on the open-source work in [`drkostas/hevy2garmin`](https://
 
 - The Liftosaur client normalizes history records into the workout structure expected by the existing Garmin sync pipeline.
 - Exercise mapping includes compatibility logic for Liftosaur-style names such as `Bench Press, Barbell`.
-- Garmin Connect displays the original Liftosaur exercise title, but Strava classifies synced sets from their numeric FIT category and subtype. Known Strava gaps use a broader variant from the same movement family so the exercise remains classified instead of appearing as `Unknown Exercise`.
+- The FIT file preserves the original Liftosaur exercise title, while Garmin and Strava can display a name derived from its numeric exercise category and subtype. Two observed Strava gaps use supported variants from the same movement family so the sets remain classified instead of appearing as `Unknown`.
 - Hosted Garmin login can run through the repo-owned Cloudflare Worker in [worker-di](./worker-di). Without `GARMIN_AUTH_WORKER_BASE_URL`, hosted setup falls back to token-file import from a local `init` or `serve` flow.
