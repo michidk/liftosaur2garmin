@@ -48,8 +48,19 @@ class TestFITGeneration:
         result = generate_fit(sample_workout, hr_samples=None, output_path=path, profile=sample_profile)
         assert result["duration_s"] == 45 * 60  # 45 minutes
 
+    @pytest.mark.parametrize(
+        ("exercise_title", "expected_pair"),
+        [
+            ("Lateral Raise", (14, 24)),
+            ("Bicep Curl", (7, 37)),
+        ],
+    )
     def test_strava_compatible_pair_keeps_original_exercise_title(
-        self, sample_profile: dict, tmp_path: Path
+        self,
+        exercise_title: str,
+        expected_pair: tuple[int, int],
+        sample_profile: dict,
+        tmp_path: Path,
     ) -> None:
         workout = {
             "id": "strava-compatible",
@@ -59,7 +70,7 @@ class TestFITGeneration:
             "exercises": [
                 {
                     "index": 0,
-                    "title": "Pull Up (Weighted)",
+                    "title": exercise_title,
                     "sets": [{"index": 0, "type": "normal", "weight_kg": 10, "reps": 5}],
                 }
             ],
@@ -75,9 +86,12 @@ class TestFITGeneration:
             if type(message).__name__ == "SetMessage" and getattr(message, "set_type", None) == 1
         )
 
-        assert title.workout_step_name == "Pull Up (Weighted)"
-        assert (title.exercise_category, title.exercise_name) == (21, 38)
-        assert (active_set.category, active_set.category_subtype) == ([21], [38])
+        assert title.workout_step_name == exercise_title
+        assert (title.exercise_category, title.exercise_name) == expected_pair
+        assert (active_set.category, active_set.category_subtype) == (
+            [expected_pair[0]],
+            [expected_pair[1]],
+        )
 
 
 class TestProfileOverride:

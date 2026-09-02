@@ -17,7 +17,7 @@ from liftosaur2garmin.mapper import (
     _custom_mappings,
     _ensure_custom_loaded,
 )
-from liftosaur2garmin.strava_mappings import STRAVA_COMPATIBLE_GARMIN_MAPPINGS
+from liftosaur2garmin.strava_mappings import STRAVA_COMPATIBLE_GARMIN_PAIRS
 
 
 LIFTOSAUR_BUILTIN_NAMES = frozenset(
@@ -78,7 +78,7 @@ class TestLookupBuiltIn:
             ("Lat Pulldown", (21, 13)),
             ("Seated Row", (23, 18)),
             ("Lateral Raise", (14, 24)),
-            ("Bicep Curl", (7, 46)),
+            ("Bicep Curl", (7, 37)),
             ("Triceps Extension", (30, 15)),
         ],
     )
@@ -118,7 +118,7 @@ class TestLookupBuiltIn:
     def test_semantically_risky_canonical_mappings(self) -> None:
         expected = {
             "Battle Ropes": (38, 5),
-            "Bicep Curl": (7, 46),
+            "Bicep Curl": (7, 37),
             "Concentration Curl": (7, 44),
             "Copenhagen Plank": (19, 74),
             "Cycling": (33, 0),
@@ -127,7 +127,7 @@ class TestLookupBuiltIn:
             "Kettlebell Turkish Get Up": (5, 89),
             "Lateral Raise": (14, 24),
             "Lateral Box Jump": (20, 13),
-            "Lying Bicep Curl": (7, 46),
+            "Lying Bicep Curl": (7, 37),
             "Pallof Press": (5, 6),
             "Rowing": (42, 0),
             "Scapular Pull Up": (26, 11),
@@ -138,19 +138,36 @@ class TestLookupBuiltIn:
         assert {name: lookup_exercise(name)[:2] for name in expected} == expected
 
     def test_strava_compatibility_fallbacks(self) -> None:
+        expected_by_pair = {
+            (14, 34): ({"Lateral Raise"}, (14, 24)),
+            (7, 46): ({"Bicep Curl", "Lying Bicep Curl"}, (7, 37)),
+        }
+
+        assert STRAVA_COMPATIBLE_GARMIN_PAIRS == {
+            original: fallback
+            for original, (_, fallback) in expected_by_pair.items()
+        }
+        for original, (expected_names, fallback) in expected_by_pair.items():
+            names = {
+                name
+                for name, pair in LIFTOSAUR_CANONICAL_TO_GARMIN.items()
+                if pair == original
+            }
+            assert names == expected_names
+            assert {lookup_exercise(name)[:2] for name in names} == {fallback}
+
+    def test_strava_compatibility_preserves_original_display_name(self) -> None:
+        assert lookup_exercise("Lateral Raise") == (14, 24, "Lateral Raise")
+        assert lookup_exercise("Bicep Curl") == (7, 37, "Bicep Curl")
+
+    def test_unobserved_exercises_keep_canonical_mappings(self) -> None:
         expected = {
-            "Military Press": (24, 14),
-            "Pull Up (Weighted)": (21, 38),
-            "Lateral Raise": (14, 24),
-            "Incline Reverse Fly": (9, 5),
-            "Hanging Leg Raise": (16, 0),
+            "Standing Military Press (Barbell)": (24, 14),
+            "Pull Up (Weighted)": (21, 24),
+            "Hanging Leg Raise": (16, 1),
         }
 
         assert {name: lookup_exercise(name)[:2] for name in expected} == expected
-        assert expected.items() <= STRAVA_COMPATIBLE_GARMIN_MAPPINGS.items()
-
-    def test_strava_compatibility_preserves_original_display_name(self) -> None:
-        assert lookup_exercise("Weighted Pull-up") == (21, 38, "Weighted Pull-up")
 
     def test_equipment_qualified_names_fall_back_to_canonical_mapping(self) -> None:
         expected = {
@@ -189,9 +206,9 @@ class TestCustomMappings:
     def test_custom_mapping_overrides_strava_fallback(self) -> None:
         import liftosaur2garmin.mapper as m
 
-        m._custom_mappings["Lateral Raise"] = (14, 34)
+        m._custom_mappings["Bicep Curl"] = (7, 46)
 
-        assert lookup_exercise("Lateral Raise")[:2] == (14, 34)
+        assert lookup_exercise("Bicep Curl")[:2] == (7, 46)
 
         m._custom_mappings.clear()
 
