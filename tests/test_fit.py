@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from fit_tool import SDK_VERSION
 from fit_tool.fit_file import FitFile
 from liftosaur2garmin.fit import generate_fit
 
@@ -47,6 +48,57 @@ class TestFITGeneration:
         path = str(tmp_path / "test.fit")
         result = generate_fit(sample_workout, hr_samples=None, output_path=path, profile=sample_profile)
         assert result["duration_s"] == 45 * 60  # 45 minutes
+
+    @pytest.mark.parametrize(
+        ("exercise_title", "expected_pair"),
+        [
+            ("Lateral Raise", (14, 34)),
+            ("Bicep Curl", (7, 46)),
+        ],
+    )
+    def test_current_profile_serializes_newer_exercise_pairs(
+        self,
+        exercise_title: str,
+        expected_pair: tuple[int, int],
+        sample_profile: dict,
+        tmp_path: Path,
+    ) -> None:
+        workout = {
+            "id": "strava-compatible",
+            "title": "Strava compatibility",
+            "start_time": "2026-08-01T10:00:00+00:00",
+            "end_time": "2026-08-01T10:05:00+00:00",
+            "exercises": [
+                {
+                    "index": 0,
+                    "title": exercise_title,
+                    "sets": [{"index": 0, "type": "normal", "weight_kg": 10, "reps": 5}],
+                }
+            ],
+        }
+        path = str(tmp_path / "strava-compatible.fit")
+
+        generate_fit(workout, hr_samples=None, output_path=path, profile=sample_profile)
+        fit_file = FitFile.from_file(path)
+        messages = [record.message for record in fit_file.records]
+        title = next(message for message in messages if type(message).__name__ == "ExerciseTitleMessage")
+        active_set = next(
+            message
+            for message in messages
+            if type(message).__name__ == "SetMessage" and getattr(message, "set_type", None) == 1
+        )
+
+        assert title.workout_step_name == exercise_title
+        assert (title.exercise_category, title.exercise_name) == expected_pair
+        assert (active_set.category, active_set.category_subtype) == (
+            [expected_pair[0]],
+            [expected_pair[1]],
+        )
+
+        sdk_major, sdk_minor, *_ = (int(part) for part in SDK_VERSION.split("."))
+        header_profile = fit_file.header.profile_version
+        assert (header_profile.major, header_profile.minor) == (sdk_major, sdk_minor)
+        assert (header_profile.major, header_profile.minor) >= (21, 171)
 
 
 class TestProfileOverride:

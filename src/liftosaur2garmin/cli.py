@@ -243,7 +243,10 @@ def cmd_unsync(args: argparse.Namespace) -> None:
 
 def cmd_map(args: argparse.Namespace) -> None:
     """Add a custom exercise mapping."""
-    save_custom_mapping(args.exercise_name, args.category, args.subcategory)
+    try:
+        save_custom_mapping(args.exercise_name, args.category, args.subcategory)
+    except ValueError as exc:
+        raise RuntimeError(str(exc)) from exc
     print(f"✓ Mapped \"{args.exercise_name}\" → category {args.category}, subcategory {args.subcategory}")
     print("  Saved to ~/.liftosaur2garmin/custom_mappings.json")
 
