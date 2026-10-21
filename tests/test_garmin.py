@@ -168,3 +168,54 @@ class TestGenerateDescription:
         workout = {"title": "Empty", "exercises": []}
         desc = generate_description(workout)
         assert "Empty" in desc
+
+
+class TestGarminRefreshFallback:
+    def test_failed_refresh_falls_back_to_password_login(self, tmp_path, monkeypatch) -> None:
+        token_file = tmp_path / "garmin_tokens.json"
+        token_file.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "kind": "garmin_native_auth",
+                    "email": "user@example.com",
+                    "auth": {
+                        "di_token": "expired-access-token",
+                        "di_refresh_token": "dead-refresh-token",
+                        "di_client_id": "client-id",
+                    },
+                }
+            )
+        )
+        monkeypatch.setattr("liftosaur2garmin.db.get_database_url", lambda: None)
+        monkeypatch.setattr(
+            "liftosaur2garmin.garmin.requests.post", lambda *_a, **_k: MagicMock(status_code=400, ok=False, text="")
+        )
+        monkeypatch.setattr("liftosaur2garmin.garmin.requests.request", lambda *_a, **_k: MagicMock(status_code=200))
+        monkeypatch.setattr(GarminAuthSession, "_token_expires_soon", lambda _self: True)
+        logins: list[tuple[str, str]] = []
+
+        def fake_login(self, email, password, **_kw):
+            logins.append((email, password))
+            self.di_token = "fresh-access-token"
+            self.di_refresh_token = "fresh-refresh-token"
+            return None, None
+
+        monkeypatch.setattr(GarminAuthSession, "login", fake_login)
+
+        client = get_client("user@example.com", "pw", token_dir=str(token_file))
+        client.auth.request("GET", "/test")
+
+        assert logins == [("user@example.com", "pw")]
+        assert json.loads(token_file.read_text())["auth"]["di_refresh_token"] == "fresh-refresh-token"
+
+    def test_failed_refresh_without_password_still_raises(self, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "liftosaur2garmin.garmin.requests.post", lambda *_a, **_k: MagicMock(status_code=400, ok=False, text="")
+        )
+        auth = GarminAuthSession()
+        auth.di_token = "expired-access-token"
+        auth.di_refresh_token = "dead-refresh-token"
+        auth.di_client_id = "client-id"
+        with pytest.raises(GarminConnectAuthenticationError):
+            auth._refresh_di_token()

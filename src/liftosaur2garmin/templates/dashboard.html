@@ -58,7 +58,7 @@
 
 <!-- Stats row -->
 {% set on_garmin = [synced_count, matched_count]|max %}
-<div class="stats-grid">
+<div class="stats-grid" hx-get="/" hx-trigger="every 60s" hx-select=".stats-grid" hx-swap="outerHTML">
     <div class="stat-card">
         <div class="stat-value accent" id="stat-on-garmin">{{ on_garmin }}</div>
         <div class="stat-label">On Garmin</div>

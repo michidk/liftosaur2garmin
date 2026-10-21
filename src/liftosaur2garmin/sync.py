@@ -338,6 +338,7 @@ def sync(
 
     client = LiftosaurClient(api_key=liftosaur_api_key)
     total_count = client.get_workout_count()
+    db.get_db().set_app_config("workout_total", {"count": total_count})  # keeps the dashboard stats fresh
     logger.info("Liftosaur reports %d total workouts", total_count)
 
     workouts = fetch_workouts(client, limit=limit, since=since, fetch_all=fetch_all)

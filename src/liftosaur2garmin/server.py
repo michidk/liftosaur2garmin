@@ -843,7 +843,7 @@ async def api_workout_hr(request: Request, workout_id: str):
         if not workout:
             return JSONResponse({"error": "Workout not found"}, status_code=404)
 
-        garmin_client = get_client(config.get("garmin_email"))
+        garmin_client = get_client(config.get("garmin_email"), config.get("garmin_password"))
         garmin_acts = fetch_garmin_activities(garmin_client, count=1000)
         matches = match_workouts_to_garmin([workout], garmin_acts)
 
@@ -1126,7 +1126,7 @@ async def api_pull_garmin_profile(request: Request):
     try:
         from liftosaur2garmin.garmin import RateLimiter, get_client
 
-        garmin_client = get_client(config.get("garmin_email"))
+        garmin_client = get_client(config.get("garmin_email"), config.get("garmin_password"))
         limiter = RateLimiter(delay=1.0)
         raw = limiter.call(garmin_client.get_user_profile)
         profile = raw.get("userData", {}) if isinstance(raw, dict) else {}
@@ -1230,7 +1230,7 @@ async def api_sync_single(request: Request, workout_id: str):
         if not workout:
             return HTMLResponse('<td colspan="5">Workout not found</td>')
 
-        garmin_client = get_client(config.get("garmin_email"))
+        garmin_client = get_client(config.get("garmin_email"), config.get("garmin_password"))
         workout_start = workout.get("start_time")
         hr_samples = (
             fetch_workout_hr_samples(garmin_client, workout)
@@ -1283,7 +1283,7 @@ async def api_unsync(request: Request, workout_id: str):
         try:
             config = load_config()
             from liftosaur2garmin.garmin import get_client
-            client = get_client(config.get("garmin_email"))
+            client = get_client(config.get("garmin_email"), config.get("garmin_password"))
             client.delete_activity(int(garmin_id))
             garmin_deleted = True
             logger.info("Deleted Garmin activity %s for workout %s", garmin_id, workout_id)
@@ -1439,7 +1439,7 @@ async def _do_sync_one(request: Request):
     # Sync this one workout
     try:
         from liftosaur2garmin.garmin import find_activity_by_start_time
-        garmin_client = get_client(config.get("garmin_email"))
+        garmin_client = get_client(config.get("garmin_email"), config.get("garmin_password"))
         workout_start = unsynced.get("start_time")
         hr_samples = (
             fetch_workout_hr_samples(garmin_client, unsynced)

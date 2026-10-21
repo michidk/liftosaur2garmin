@@ -282,7 +282,7 @@ class TestSyncOneApi:
         monkeypatch.setattr("liftosaur2garmin.server.db.is_synced", lambda workout_id: False)
         monkeypatch.setattr("liftosaur2garmin.server.db.mark_synced", db_mock.mark_synced)
         monkeypatch.setattr("liftosaur2garmin.liftosaur.LiftosaurClient", lambda api_key: liftosaur_client)
-        monkeypatch.setattr("liftosaur2garmin.garmin.get_client", lambda email: object())
+        monkeypatch.setattr("liftosaur2garmin.garmin.get_client", lambda *_a, **_k: object())
         monkeypatch.setattr(
             "liftosaur2garmin.garmin.find_activity_by_start_time",
             lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("dedup lookup should be skipped")),
@@ -333,7 +333,7 @@ class TestSyncOneApi:
         monkeypatch.setattr("liftosaur2garmin.server.db.is_synced", lambda workout_id: False)
         monkeypatch.setattr("liftosaur2garmin.server.db.mark_synced", db_mock.mark_synced)
         monkeypatch.setattr("liftosaur2garmin.liftosaur.LiftosaurClient", lambda api_key: liftosaur_client)
-        monkeypatch.setattr("liftosaur2garmin.garmin.get_client", lambda email: object())
+        monkeypatch.setattr("liftosaur2garmin.garmin.get_client", lambda *_a, **_k: object())
         monkeypatch.setattr(
             "liftosaur2garmin.garmin.find_activity_by_start_time",
             lambda *_args, **_kwargs: find_calls.append("called") or 999,
@@ -405,7 +405,7 @@ class TestSyncOneApi:
         monkeypatch.setattr("liftosaur2garmin.liftosaur.LiftosaurClient", lambda api_key: liftosaur_client)
         monkeypatch.setattr(
             "liftosaur2garmin.garmin.get_client",
-            lambda email: (_ for _ in ()).throw(AssertionError("Garmin client should not be used when no workout is found")),
+            lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("Garmin client should not be used when no workout is found")),
         )
 
         response = client.post("/api/sync-one")

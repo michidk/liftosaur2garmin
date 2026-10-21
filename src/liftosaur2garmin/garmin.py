@@ -176,6 +176,7 @@ class GarminAuthSession:
         self.full_name: str | None = None
         self._email = ""
         self._token_persister: Callable[[dict[str, Any]], object] | None = None
+        self._relogin: tuple[str, str] | None = None
         self._mfa_method = "email"
         self._mfa_url: str | None = None
         self._mfa_params: dict[str, str] | None = None
@@ -535,6 +536,13 @@ class GarminAuthSession:
             timeout=30,
         )
         if not response.ok:
+            if self._relogin:
+                # Refresh tokens expire after weeks of inactivity; fall back to a password login.
+                logger.warning("Garmin token refresh failed (HTTP %s); logging in again", response.status_code)
+                self.login(*self._relogin, prompt_mfa=None)
+                if self._token_persister:
+                    self._token_persister(self.token_payload())
+                return
             raise GarminConnectAuthenticationError(
                 f"Garmin token refresh failed: HTTP {response.status_code}"
             )
@@ -813,6 +821,8 @@ def get_client(
     auth.set_token_persister(
         lambda payload: save_token_payload(payload, token_dir=token_dir)
     )
+    if email and password:
+        auth._relogin = (email, password)
     return GarminClient(auth)
 
 
