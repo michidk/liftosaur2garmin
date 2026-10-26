@@ -933,10 +933,15 @@ def rename_activity(client: GarminClient, activity_id: int, name: str) -> None:
 
 def set_description(client: GarminClient, activity_id: int, description: str) -> None:
     url = f"/activity-service/activity/{activity_id}"
-    payload = {"activityId": activity_id, "description": description}
+    payload = {
+        "activityId": activity_id,
+        "description": description,
+        # typeId not verified against /activity-service/activity/eventTypes (no token available)
+        "eventType": {"typeId": 4, "typeKey": "fitness"},
+    }
     client.put_json(url, payload)
     time.sleep(1.0)
-    logger.info("  Description set (%d chars)", len(description))
+    logger.info("  Description and event type set (%d chars)", len(description))
 
 
 def get_exercise_sets(client: GarminClient, activity_id: int) -> list[dict]:
