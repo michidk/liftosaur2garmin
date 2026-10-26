@@ -24,13 +24,19 @@ jobs:
     name: Bump version and tag
     runs-on: ubuntu-24.04
     steps:
-      # NOTE: Add a fine-grained PAT with contents: write access to this repository
-      # as the RELEASE_PAT repository secret. GITHUB_TOKEN pushes do not trigger
-      # other workflows, so the PAT is required to start release.yml from the tag.
+      - name: Create release App token
+        id: release-token
+        uses: actions/create-github-app-token@0f859bf9e69e887678d5bbfbee594437cb440ffe # v2.1.0
+        with:
+          app-id: ${{ secrets.RELEASER_APP_ID }}
+          private-key: ${{ secrets.RELEASER_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.RELEASE_PAT }}
+          token: ${{ steps.release-token.outputs.token }}
       - name: Install Python
         uses: actions/setup-python@v5
         with:
