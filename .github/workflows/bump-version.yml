@@ -1,6 +1,10 @@
 # @orcastrate
 # template: python/bump-version
 # @end-orcastrate
+
+# @orcastrate
+# template: python/bump-version
+# @end-orcastrate
 name: Bump Version
 
 on:
