@@ -1,5 +1,5 @@
 image:
-  tag: "0.2.4"
+  tag: "0.3.0"
 
 secret:
   create: false
