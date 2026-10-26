@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
+import pytest
 
 from liftosaur2garmin.sync import fetch_workout_hr_samples, fetch_workouts, sync
 
@@ -209,3 +210,27 @@ class TestSync:
 
         assert result["synced"] == 1
         assert captured_hr == [115, 125]
+
+    @pytest.mark.parametrize("wait_for_hr, expected_synced", [(True, 0), (False, 1)])
+    def test_waits_for_hr_on_recent_workout_without_samples(self, sample_workout: dict, wait_for_hr: bool, expected_synced: int) -> None:
+        now = datetime.now(timezone.utc)
+        recent = {**sample_workout, "start_time": (now - timedelta(hours=1)).isoformat(), "end_time": now.isoformat()}
+        with patch("liftosaur2garmin.sync.LiftosaurClient") as MockClient, \
+             patch("liftosaur2garmin.sync.db") as mock_db, \
+             patch("liftosaur2garmin.sync.get_client") as mock_get_client, \
+             patch("liftosaur2garmin.sync.upload_fit", return_value={"activity_id": 456}), \
+             patch("liftosaur2garmin.sync.rename_activity"), \
+             patch("liftosaur2garmin.sync.set_description"):
+            MockClient.return_value.get_workout_count.return_value = 1
+            MockClient.return_value.get_workouts.return_value = {"workouts": [recent], "page_count": 1}
+            mock_db.is_synced.return_value = False
+            mock_get_client.return_value.get_heart_rates.return_value = {"heartRateValues": []}
+
+            result = sync(
+                config={"liftosaur_api_key": "test", "garmin_email": "e", "hr_fusion": {"enabled": True}, "update_existing": {"enabled": False}},
+                limit=1,
+                wait_for_hr=wait_for_hr,
+            )
+
+        assert result["synced"] == expected_synced
+        assert mock_db.mark_synced.called == bool(expected_synced)

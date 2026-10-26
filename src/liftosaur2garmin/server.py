@@ -249,7 +249,7 @@ def _run_autosync() -> None:
     logger.info("Auto-sync: running scheduled sync")
     liftosaur_auth_failed = False
     try:
-        result = sync(limit=10, dry_run=False)
+        result = sync(limit=10, dry_run=False, wait_for_hr=True)
     except Exception as e:
         from liftosaur2garmin.liftosaur import LiftosaurAuthError
 
@@ -753,6 +753,9 @@ async def workouts_page(request: Request):
         # Check for workouts edited in Liftosaur since last sync
         stale_ids = set(_db.get_stale_synced(workouts_raw))
 
+        from liftosaur2garmin.sync import within_hr_wait
+        hr_fusion_on = config.get("hr_fusion", {}).get("enabled", True)
+
         # Get profile for calorie calculation
         profile = config.get("user_profile", {})
         weight_kg = profile.get("weight_kg", 80.0)
@@ -771,6 +774,7 @@ async def workouts_page(request: Request):
                     w["edited_since_sync"] = True
             else:
                 w["status"] = "pending"
+                w["waiting_hr"] = hr_fusion_on and within_hr_wait(w)
 
             # Calculate calorie breakdown for display
             try:

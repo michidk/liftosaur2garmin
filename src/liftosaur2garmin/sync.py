@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +26,22 @@ from liftosaur2garmin.liftosaur import LiftosaurClient
 from liftosaur2garmin.mapper import lookup_exercise
 
 logger = logging.getLogger("liftosaur2garmin")
+
+
+HR_WAIT_HOURS = 6
+
+
+def within_hr_wait(workout: dict) -> bool:
+    """True while a workout is recent enough that Garmin may not have its HR data yet."""
+    from liftosaur2garmin.fit import parse_timestamp
+
+    end_raw = workout.get("end_time") or workout.get("endTime")
+    end_dt = parse_timestamp(end_raw) if end_raw else None
+    if not end_dt:
+        return False
+    if end_dt.tzinfo is None:
+        end_dt = end_dt.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - end_dt < timedelta(hours=HR_WAIT_HOURS)
 
 
 def fetch_workout_hr_samples(garmin_client, workout: dict) -> list[int]:
@@ -310,6 +326,7 @@ def sync(
     since: str | None = None,
     fetch_all: bool = False,
     dry_run: bool = False,
+    wait_for_hr: bool = False,
     **overrides: Any,
 ) -> dict:
     """Sync Liftosaur workouts to Garmin Connect.
@@ -374,11 +391,8 @@ def sync(
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 fit_path = str(Path(tmp) / f"{wid}.fit")
-                hr_samples = (
-                    fetch_workout_hr_samples(garmin_client, workout)
-                    if garmin_client and cfg.get("hr_fusion", {}).get("enabled", True)
-                    else []
-                )
+                hr_enabled = cfg.get("hr_fusion", {}).get("enabled", True)
+                hr_samples = fetch_workout_hr_samples(garmin_client, workout) if garmin_client and hr_enabled else []
                 result = generate_fit(workout, hr_samples=hr_samples, output_path=fit_path)
                 logger.info(
                     "  FIT: %d exercises, %d sets, %d cal",
@@ -397,6 +411,11 @@ def sync(
                     activity_id = existing_id
                     update_existing_activity_sets(garmin_client, activity_id, workout)
                 else:
+                    # Garmin gets HR from the watch's sync; uploading earlier would lock in a FIT without it.
+                    if wait_for_hr and not hr_samples and hr_enabled and within_hr_wait(workout):
+                        logger.info("  Waiting for Garmin HR data (up to %dh); will retry", HR_WAIT_HOURS)
+                        stats["skipped"] += 1
+                        continue
                     upload_result = upload_fit(garmin_client, fit_path, workout_start=start_time)
                     activity_id = upload_result.get("activity_id")
 

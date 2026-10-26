@@ -260,6 +260,9 @@
         </div>
         <div style="flex-shrink: 0; margin-left: 16px;">
             {% if w.status == 'pending' %}
+            {% if w.waiting_hr %}
+            <div style="font-size: 11px; color: var(--text-muted); text-align: right; margin-bottom: 6px;">Auto-sync waits for HR data</div>
+            {% endif %}
             <button
                 class="btn btn-secondary btn-sm"
                 hx-post="/api/sync/{{ w.id }}"
@@ -269,7 +272,7 @@
                 aria-label="Upload {{ w.title }} to Garmin"
             >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                Upload
+                {{ 'Sync now' if w.waiting_hr else 'Upload' }}
             </button>
             {% endif %}
         </div>
